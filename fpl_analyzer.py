@@ -1532,8 +1532,8 @@ class FPLAnalyzer:
             font-size: 0.9em;
         }}
         th {{
-            background: linear-gradient(135deg, #37003c 0%, #2d0032 100%);
-            color: #00ff87;
+            background: #a8d4f0;
+            color: #000000;
             padding: 12px 8px;
             text-align: left;
             font-weight: 600;
@@ -1556,13 +1556,18 @@ class FPLAnalyzer:
         }}
         .player-name {{
             font-weight: 600;
-            color: #ffffff;
+            color: #000000;
+            background: #ffffff;
+            padding: 3px 8px;
+            border-radius: 5px;
         }}
         .team-badge {{
-            background: #37003c;
+            background: #ffffff;
+            color: #000000;
             padding: 3px 8px;
             border-radius: 5px;
             font-size: 0.85em;
+            font-weight: 600;
         }}
         .price {{
             color: #00ff87;
