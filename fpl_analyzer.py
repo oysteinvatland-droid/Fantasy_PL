@@ -2,6 +2,12 @@ import requests
 import pandas as pd
 from datetime import datetime
 import numpy as np
+import warnings
+import urllib3
+
+# Deaktiver SSL-advarsler (FPL API har noen ganger sertifikat-problemer)
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+warnings.filterwarnings('ignore', message='Unverified HTTPS request')
 
 class FPLAnalyzer:
     def __init__(self):
