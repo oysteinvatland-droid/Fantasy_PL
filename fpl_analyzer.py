@@ -1422,6 +1422,342 @@ class FPLAnalyzer:
                     
         except Exception as e:
             print(f"\n⚠️ Kunne ikke hente deadline-info: {e}")
+    
+    def generer_html_rapport(self, filnavn="Fantasy_Premier_League_recommendations.html"):
+        """Genererer en pen HTML-rapport med styling og ikoner"""
+        
+        # Hent data
+        spisser = self.beste_spisser_avansert(antall=25, min_minutter=180)
+        midtbane = self.beste_midtbanespillere(antall=25, min_minutter=180)
+        forsvar = self.beste_forsvarsspillere(antall=25, min_minutter=180)
+        arsenal_forsvar = self.vis_spillere(['Saliba', 'Gabriel'], posisjon='DEF')
+        
+        # Hent deadline info
+        deadline_html = self._get_deadline_html()
+        
+        html = f'''<!DOCTYPE html>
+<html lang="no">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fantasy Premier League Recommendations</title>
+    <style>
+        * {{
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }}
+        body {{
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #ffffff;
+        }}
+        .container {{
+            max-width: 1400px;
+            margin: 0 auto;
+        }}
+        .header {{
+            text-align: center;
+            padding: 40px 20px;
+            background: linear-gradient(135deg, #37003c 0%, #00ff87 100%);
+            border-radius: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 40px rgba(0, 255, 135, 0.3);
+        }}
+        .header h1 {{
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }}
+        .header .subtitle {{
+            font-size: 1.2em;
+            opacity: 0.9;
+        }}
+        .deadline-box {{
+            background: linear-gradient(135deg, #ff6b6b 0%, #feca57 100%);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 30px;
+            text-align: center;
+            box-shadow: 0 5px 20px rgba(255, 107, 107, 0.3);
+        }}
+        .deadline-box h2 {{
+            font-size: 1.5em;
+            margin-bottom: 10px;
+        }}
+        .deadline-box .time {{
+            font-size: 2em;
+            font-weight: bold;
+        }}
+        .deadline-box.urgent {{
+            animation: pulse 1s infinite;
+        }}
+        @keyframes pulse {{
+            0%, 100% {{ transform: scale(1); }}
+            50% {{ transform: scale(1.02); }}
+        }}
+        .section {{
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 25px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }}
+        .section-header {{
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid rgba(0, 255, 135, 0.3);
+        }}
+        .section-icon {{
+            font-size: 2em;
+        }}
+        .section-title {{
+            font-size: 1.5em;
+            color: #00ff87;
+        }}
+        .section-desc {{
+            font-size: 0.9em;
+            color: rgba(255, 255, 255, 0.7);
+            margin-top: 5px;
+        }}
+        table {{
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9em;
+        }}
+        th {{
+            background: linear-gradient(135deg, #37003c 0%, #2d0032 100%);
+            color: #00ff87;
+            padding: 12px 8px;
+            text-align: left;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+        }}
+        td {{
+            padding: 10px 8px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }}
+        tr:hover {{
+            background: rgba(0, 255, 135, 0.1);
+        }}
+        tr:nth-child(1) td {{ background: rgba(255, 215, 0, 0.2); }}
+        tr:nth-child(2) td {{ background: rgba(192, 192, 192, 0.15); }}
+        tr:nth-child(3) td {{ background: rgba(205, 127, 50, 0.15); }}
+        .rank {{
+            font-weight: bold;
+            color: #00ff87;
+        }}
+        .player-name {{
+            font-weight: 600;
+            color: #ffffff;
+        }}
+        .team-badge {{
+            background: #37003c;
+            padding: 3px 8px;
+            border-radius: 5px;
+            font-size: 0.85em;
+        }}
+        .price {{
+            color: #00ff87;
+            font-weight: 600;
+        }}
+        .score {{
+            background: linear-gradient(135deg, #00ff87 0%, #00d4aa 100%);
+            color: #1a1a2e;
+            padding: 5px 10px;
+            border-radius: 8px;
+            font-weight: bold;
+        }}
+        .footer {{
+            text-align: center;
+            padding: 30px;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 0.9em;
+        }}
+        .highlight-box {{
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 25px;
+        }}
+        .highlight-box h3 {{
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }}
+        .medal {{
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 24px;
+            font-weight: bold;
+            font-size: 0.8em;
+        }}
+        .gold {{ background: linear-gradient(135deg, #ffd700, #ffec8b); color: #1a1a2e; }}
+        .silver {{ background: linear-gradient(135deg, #c0c0c0, #e8e8e8); color: #1a1a2e; }}
+        .bronze {{ background: linear-gradient(135deg, #cd7f32, #daa06d); color: #1a1a2e; }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⚽ Fantasy Premier League</h1>
+            <div class="subtitle">AI-Powered Player Recommendations</div>
+        </div>
+        
+        {deadline_html}
+        
+        <div class="section">
+            <div class="section-header">
+                <span class="section-icon">⭐</span>
+                <div>
+                    <div class="section-title">Top 25 Forwards</div>
+                    <div class="section-desc">Ranked by: xG/90, Form, Fixtures, Team Attack Strength, Bonus Potential</div>
+                </div>
+            </div>
+            {self._df_to_html_table(spisser, 'FWD')}
+        </div>
+        
+        <div class="section">
+            <div class="section-header">
+                <span class="section-icon">🎯</span>
+                <div>
+                    <div class="section-title">Top 25 Midfielders</div>
+                    <div class="section-desc">Ranked by: xGI/90 (goals + assists), Creativity, Form, Fixtures</div>
+                </div>
+            </div>
+            {self._df_to_html_table(midtbane, 'MID')}
+        </div>
+        
+        <div class="section">
+            <div class="section-header">
+                <span class="section-icon">🛡️</span>
+                <div>
+                    <div class="section-title">Top 25 Defenders</div>
+                    <div class="section-desc">xPts Model: 4×CS + 6×xG + 3×xA + MinPts + Bonus (adjusted for fixtures & playing time)</div>
+                </div>
+            </div>
+            {self._df_to_html_table(forsvar, 'DEF')}
+        </div>
+        
+        <div class="highlight-box">
+            <h3>🔍 Arsenal Defense Spotlight: Saliba & Gabriel</h3>
+            {self._df_to_html_table(arsenal_forsvar, 'DEF') if arsenal_forsvar is not None else '<p>Data not available</p>'}
+        </div>
+        
+        <div class="footer">
+            <p>Generated by FPL Analyzer • Data from Fantasy Premier League API</p>
+            <p>Report generated: {datetime.now().strftime('%Y-%m-%d %H:%M')}</p>
+        </div>
+    </div>
+</body>
+</html>'''
+        
+        # Skriv til fil
+        with open(filnavn, 'w', encoding='utf-8') as f:
+            f.write(html)
+        
+        print(f"✓ HTML-rapport generert: {filnavn}")
+        return filnavn
+    
+    def _get_deadline_html(self):
+        """Genererer HTML for deadline-boksen"""
+        if self.data is None:
+            return ""
+        
+        try:
+            events = self.data.get('events', [])
+            neste_gw = None
+            
+            for event in events:
+                if not event.get('finished', True):
+                    neste_gw = event
+                    break
+            
+            if neste_gw is None:
+                return ""
+            
+            deadline_str = neste_gw.get('deadline_time', '')
+            if deadline_str:
+                deadline = datetime.fromisoformat(deadline_str.replace('Z', '+00:00'))
+                nå = datetime.now(deadline.tzinfo)
+                tid_igjen = deadline - nå
+                
+                if tid_igjen.total_seconds() > 0:
+                    dager = tid_igjen.days
+                    timer = tid_igjen.seconds // 3600
+                    minutter = (tid_igjen.seconds % 3600) // 60
+                    
+                    urgent_class = "urgent" if dager == 0 and timer < 6 else ""
+                    warning = ""
+                    if dager == 0 and timer < 6:
+                        warning = "<div style='margin-top:10px;font-size:1.2em;'>⚠️ HURRY! Less than 6 hours remaining!</div>"
+                    elif dager == 0:
+                        warning = "<div style='margin-top:10px;font-size:1.2em;'>⚠️ Deadline is TODAY!</div>"
+                    elif dager == 1:
+                        warning = "<div style='margin-top:10px;font-size:1.2em;'>📅 Deadline is TOMORROW!</div>"
+                    
+                    return f'''
+                    <div class="deadline-box {urgent_class}">
+                        <h2>⏰ Transfer Deadline - Gameweek {neste_gw.get('id', '?')}</h2>
+                        <div class="time">{dager}d {timer}h {minutter}m</div>
+                        <div>{deadline.strftime('%A %d %B %Y at %H:%M')}</div>
+                        {warning}
+                    </div>'''
+        except:
+            pass
+        return ""
+    
+    def _df_to_html_table(self, df, position_type):
+        """Konverterer en DataFrame til en stylet HTML-tabell"""
+        if df is None or df.empty:
+            return "<p>No data available</p>"
+        
+        html = "<table><thead><tr><th>#</th>"
+        for col in df.columns:
+            html += f"<th>{col}</th>"
+        html += "</tr></thead><tbody>"
+        
+        for idx, (_, row) in enumerate(df.iterrows(), 1):
+            medal = ""
+            if idx == 1:
+                medal = '<span class="medal gold">1</span>'
+            elif idx == 2:
+                medal = '<span class="medal silver">2</span>'
+            elif idx == 3:
+                medal = '<span class="medal bronze">3</span>'
+            else:
+                medal = f'<span class="rank">{idx}</span>'
+            
+            html += f"<tr><td>{medal}</td>"
+            for col_idx, val in enumerate(row):
+                col_name = df.columns[col_idx]
+                
+                # Style basert på kolonne
+                if col_name == 'name':
+                    html += f'<td class="player-name">{val}</td>'
+                elif col_name == 'lag':
+                    html += f'<td><span class="team-badge">{val}</span></td>'
+                elif col_name == 'pris':
+                    html += f'<td class="price">£{val}m</td>'
+                elif col_name in ['total', 'xPts_ad', 'xPts_base']:
+                    html += f'<td><span class="score">{val}</span></td>'
+                else:
+                    html += f'<td>{val}</td>'
+            html += "</tr>"
+        
+        html += "</tbody></table>"
+        return html
 
 
 # Hovedprogram
@@ -1436,6 +1772,11 @@ if __name__ == "__main__":
     if analyzer.hent_data():
         analyzer.hent_fixtures()  # Hent også fixture data
         analyzer.lag_spillerdataframe()
+        
+        # Generer HTML-rapport
+        analyzer.generer_html_rapport("Fantasy_Premier_League_recommendations.html")
+        
+        # Vis også tekst-rapport i konsollen
         analyzer.vis_rapport()
     else:
         print("Kunne ikke hente data fra FPL API")
