@@ -28,16 +28,16 @@ jobs:
     
     - name: Run FPL analysis script
       run: |
-        python fpl_analyzer.py > fpl_report.txt 2>&1
+        python fpl_analyzer.py > console_output.txt 2>&1
       continue-on-error: true
     
     - name: Check if report was generated
       run: |
-        if [ -f fpl_report.txt ]; then
-          echo "Report generated successfully"
-          head -100 fpl_report.txt
+        if [ -f "Fantasy_Premier_League_recommendations.html" ]; then
+          echo "HTML Report generated successfully"
         else
-          echo "Report generation failed"
+          echo "HTML Report generation failed"
+          cat console_output.txt
           exit 1
         fi
     
@@ -49,23 +49,17 @@ jobs:
         secure: false
         username: ${{ secrets.EMAIL_USERNAME }}
         password: ${{ secrets.EMAIL_PASSWORD }}
-        subject: "⚽ FPL Ukentlig Rapport - ${{ github.event.repository.name }}"
+        subject: "⚽ FPL Weekly Recommendations - Gameweek Update"
         to: ${{ secrets.EMAIL_TO }}
         from: FPL Analyzer Bot
-        body: |
-          Hei!
-          
-          Her er din ukentlige FPL-analyse.
-          
-          Se vedlagt fil for komplett rapport.
-          
-          Mvh,
-          FPL Analyzer Bot
-        attachments: fpl_report.txt
+        html_body: file://Fantasy_Premier_League_recommendations.html
+        attachments: Fantasy_Premier_League_recommendations.html
     
     - name: Upload report as artifact
       uses: actions/upload-artifact@v4
       with:
         name: fpl-report-${{ github.run_number }}
-        path: fpl_report.txt
+        path: |
+          Fantasy_Premier_League_recommendations.html
+          console_output.txt
         retention-days: 30
