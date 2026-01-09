@@ -1,0 +1,71 @@
+name: FPL Weekly Report
+
+on:
+  schedule:
+    # Kjører hver fredag kl 08:00 UTC (09:00 norsk tid)
+    - cron: '0 8 * * 5'
+  
+  # Tillat manuell kjøring fra GitHub Actions-fanen
+  workflow_dispatch:
+
+jobs:
+  send-fpl-report:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    
+    - name: Run FPL analysis script
+      run: |
+        python fpl_analyzer.py > fpl_report.txt 2>&1
+      continue-on-error: true
+    
+    - name: Check if report was generated
+      run: |
+        if [ -f fpl_report.txt ]; then
+          echo "Report generated successfully"
+          head -100 fpl_report.txt
+        else
+          echo "Report generation failed"
+          exit 1
+        fi
+    
+    - name: Send email with report
+      uses: dawidd6/action-send-mail@v3
+      with:
+        server_address: smtp.gmail.com
+        server_port: 587
+        secure: false
+        username: ${{ secrets.EMAIL_USERNAME }}
+        password: ${{ secrets.EMAIL_PASSWORD }}
+        subject: "⚽ FPL Ukentlig Rapport - ${{ github.event.repository.name }}"
+        to: ${{ secrets.EMAIL_TO }}
+        from: FPL Analyzer Bot
+        body: |
+          Hei!
+          
+          Her er din ukentlige FPL-analyse.
+          
+          Se vedlagt fil for komplett rapport.
+          
+          Mvh,
+          FPL Analyzer Bot
+        attachments: fpl_report.txt
+    
+    - name: Upload report as artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: fpl-report-${{ github.run_number }}
+        path: fpl_report.txt
+        retention-days: 30
