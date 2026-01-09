@@ -2085,26 +2085,33 @@ class FPLAnalyzer:
             
             html = f'''
         <div class="section my-team-section">
-            <div class="section-header">
-                <span class="section-icon">📋</span>
-                <div>
-                    <div class="section-title">{team_name}</div>
-                    <div class="section-desc">Your team ranked against our analysis • Gameweek {current_gw}</div>
-                </div>
+            <div class="my-team-header">
+                <span class="my-team-icon">⚽</span>
+                <div class="my-team-title">Your Team: {team_name}</div>
             </div>
+            <div class="my-team-subtitle">Ranked against our analysis • Gameweek {current_gw}</div>
             
             <div class="team-stats">
-                <div class="stat-box">
-                    <div class="stat-value">#{avg_rank:.0f}</div>
-                    <div class="stat-label">Avg Rank</div>
+                <div class="stat-card">
+                    <div class="stat-icon">📊</div>
+                    <div class="stat-content">
+                        <div class="stat-value">#{avg_rank:.0f}</div>
+                        <div class="stat-label">Average Rank</div>
+                    </div>
                 </div>
-                <div class="stat-box">
-                    <div class="stat-value">{top_10}</div>
-                    <div class="stat-label">In Top 10</div>
+                <div class="stat-card">
+                    <div class="stat-icon">🥇</div>
+                    <div class="stat-content">
+                        <div class="stat-value">{top_10}</div>
+                        <div class="stat-label">Players in Top 10</div>
+                    </div>
                 </div>
-                <div class="stat-box">
-                    <div class="stat-value">{top_25}</div>
-                    <div class="stat-label">In Top 25</div>
+                <div class="stat-card">
+                    <div class="stat-icon">🏆</div>
+                    <div class="stat-content">
+                        <div class="stat-value">{top_25}</div>
+                        <div class="stat-label">Players in Top 25</div>
+                    </div>
                 </div>
             </div>
             
@@ -2145,20 +2152,53 @@ class FPLAnalyzer:
         
         <style>
             .my-team-section {{
-                background: linear-gradient(135deg, rgba(55, 0, 60, 0.3) 0%, rgba(0, 255, 135, 0.1) 100%);
-                border: 2px solid #00ff87;
+                background: linear-gradient(135deg, #ffffff 0%, #f0f4f8 100%);
+                border: none;
+                border-radius: 20px;
+                box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            }}
+            .my-team-header {{
+                display: flex;
+                align-items: center;
+                gap: 15px;
+                margin-bottom: 5px;
+            }}
+            .my-team-icon {{
+                font-size: 2.5em;
+            }}
+            .my-team-title {{
+                font-size: 2em;
+                font-weight: bold;
+                color: #1a3a5c;
+            }}
+            .my-team-subtitle {{
+                color: #666;
+                font-size: 1em;
+                margin-bottom: 25px;
+                padding-left: 60px;
             }}
             .team-stats {{
                 display: flex;
                 justify-content: center;
-                gap: 30px;
-                margin: 20px 0;
+                gap: 20px;
+                margin: 25px 0;
+                flex-wrap: wrap;
             }}
-            .stat-box {{
-                text-align: center;
-                padding: 15px 25px;
-                background: rgba(0, 255, 135, 0.1);
-                border-radius: 10px;
+            .stat-card {{
+                display: flex;
+                align-items: center;
+                gap: 15px;
+                background: linear-gradient(135deg, #1a3a5c 0%, #2d5a87 100%);
+                padding: 20px 30px;
+                border-radius: 15px;
+                box-shadow: 0 5px 20px rgba(26, 58, 92, 0.3);
+                min-width: 200px;
+            }}
+            .stat-icon {{
+                font-size: 2em;
+            }}
+            .stat-content {{
+                text-align: left;
             }}
             .stat-value {{
                 font-size: 2em;
@@ -2166,8 +2206,30 @@ class FPLAnalyzer:
                 color: #00ff87;
             }}
             .stat-label {{
-                font-size: 0.9em;
-                color: #888;
+                font-size: 0.85em;
+                color: #a0c4e8;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+            }}
+            .my-team-section table {{
+                background: white;
+                border-radius: 10px;
+                overflow: hidden;
+            }}
+            .my-team-section th {{
+                background: #1a3a5c !important;
+                color: white !important;
+            }}
+            .my-team-section td {{
+                color: #333;
+                border-bottom: 1px solid #e0e0e0;
+            }}
+            .my-team-section tr:hover {{
+                background: #f5f9fc;
+            }}
+            .my-team-section h4 {{
+                color: #1a3a5c !important;
+                font-size: 1.2em;
             }}
             .pos-badge {{
                 padding: 3px 8px;
@@ -2179,11 +2241,11 @@ class FPLAnalyzer:
             .pos-def {{ background: #00ff87; color: #000; }}
             .pos-mid {{ background: #00bfff; color: #000; }}
             .pos-fwd {{ background: #ff6b6b; color: #000; }}
-            .rank-gold {{ color: #ffd700; font-weight: bold; }}
-            .rank-silver {{ color: #c0c0c0; font-weight: bold; }}
+            .rank-gold {{ color: #ffd700; font-weight: bold; text-shadow: 1px 1px 2px rgba(0,0,0,0.3); }}
+            .rank-silver {{ color: #888; font-weight: bold; }}
             .rank-bronze {{ color: #cd7f32; font-weight: bold; }}
-            .rank-normal {{ color: #888; }}
-            .rank-na {{ color: #555; }}
+            .rank-normal {{ color: #666; }}
+            .rank-na {{ color: #999; }}
         </style>'''
             
             return html
