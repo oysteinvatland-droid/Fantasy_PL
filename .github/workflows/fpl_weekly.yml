@@ -3,7 +3,7 @@ name: FPL Weekly Report
 on:
   schedule:
     # Kjører hver fredag kl 08:00 UTC (09:00 norsk tid)
-    - cron: '0 8 * * 5'
+    - cron: '46 21 * * *'
   
   # Tillat manuell kjøring fra GitHub Actions-fanen
   workflow_dispatch:
