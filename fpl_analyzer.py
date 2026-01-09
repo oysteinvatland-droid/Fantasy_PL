@@ -149,11 +149,11 @@ class FPLAnalyzer:
         total_difficulty = 0
         for _, kamp in kommende.iterrows():
             if kamp['team_h'] == team_id:
-                # Hjemmekamp - se på bortelagets forsvarsstyrke
-                difficulty = kamp['team_a_difficulty']
-            else:
-                # Bortekamp - se på hjemmelagets forsvarsstyrke
+                # Hjemmekamp - bruk team_h_difficulty (vanskelighetsgrad for hjemmelaget)
                 difficulty = kamp['team_h_difficulty']
+            else:
+                # Bortekamp - bruk team_a_difficulty (vanskelighetsgrad for bortelaget)
+                difficulty = kamp['team_a_difficulty']
             total_difficulty += difficulty
         
         avg_difficulty = total_difficulty / len(kommende)
@@ -915,6 +915,46 @@ class FPLAnalyzer:
         
         return spiller
     
+    def _hent_fixture_detaljer(self, team_id, antall=5):
+        """Henter detaljer om kommende kamper for et lag"""
+        if self.fixtures is None:
+            return None
+        
+        # Finn kommende kamper (ikke finished)
+        team_fixtures = self.fixtures[
+            ((self.fixtures['team_h'] == team_id) | (self.fixtures['team_a'] == team_id)) &
+            (self.fixtures['finished'] == False)
+        ].head(antall)
+        
+        if team_fixtures.empty:
+            return None
+        
+        fixture_list = []
+        for _, fixture in team_fixtures.iterrows():
+            is_home = fixture['team_h'] == team_id
+            opponent_id = fixture['team_a'] if is_home else fixture['team_h']
+            # FDR for laget: Hvis hjemmekamp, bruk team_h_difficulty. Hvis bortekamp, bruk team_a_difficulty.
+            fdr = fixture['team_h_difficulty'] if is_home else fixture['team_a_difficulty']
+            
+            # Finn lagnavnet
+            opponent_name = "???"
+            if self.teams_df is not None:
+                opponent_row = self.teams_df[self.teams_df['id'] == opponent_id]
+                if not opponent_row.empty:
+                    opponent_name = opponent_row.iloc[0]['short_name']
+            
+            venue = "H" if is_home else "A"
+            gw = fixture.get('event', '?')
+            
+            fixture_list.append({
+                'gw': gw,
+                'opponent': opponent_name,
+                'venue': venue,
+                'fdr': fdr
+            })
+        
+        return fixture_list
+    
     def _vis_forsvar_beregning(self, spiller, df):
         """Viser detaljert beregning for forsvarsspiller"""
         
@@ -970,6 +1010,17 @@ class FPLAnalyzer:
         
         print(f"\n📅 FIXTURE-JUSTERING:")
         print(f"   Fixture difficulty (neste 5): {spiller['fixture_difficulty']:.1f}")
+        
+        # Vis detaljerte fixtures
+        fixture_detaljer = self._hent_fixture_detaljer(spiller['team'], 5)
+        if fixture_detaljer:
+            print(f"   Kommende kamper:")
+            for f in fixture_detaljer:
+                fdr_bar = "🟢" if f['fdr'] <= 2 else "🟡" if f['fdr'] == 3 else "🟠" if f['fdr'] == 4 else "🔴"
+                print(f"      GW{f['gw']}: {f['opponent']} ({f['venue']}) - FDR: {f['fdr']} {fdr_bar}")
+            fdr_sum = sum(f['fdr'] for f in fixture_detaljer)
+            print(f"   Gjennomsnitt FDR: {fdr_sum}/{len(fixture_detaljer)} = {fdr_sum/len(fixture_detaljer):.1f}")
+        
         fixture_mult = 1.2 - (spiller['fixture_difficulty'] - 2) * 0.1
         print(f"   Fixture multiplier: 1.2 - ({spiller['fixture_difficulty']:.1f} - 2) × 0.1 = {fixture_mult:.2f}")
         print(f"   xPts_adjusted = {spiller['xPts_base'] * spiller['playing_time_probability']:.2f} × {fixture_mult:.2f}")
@@ -1000,7 +1051,17 @@ class FPLAnalyzer:
         print(f"   Creativity score: {spiller['creativity_num']:.1f}")
         
         print(f"\n📅 FIXTURES:")
-        print(f"   Fixture difficulty: {spiller['fixture_difficulty']:.1f}")
+        print(f"   Fixture difficulty (neste 5): {spiller['fixture_difficulty']:.1f}")
+        
+        # Vis detaljerte fixtures
+        fixture_detaljer = self._hent_fixture_detaljer(spiller['team'], 5)
+        if fixture_detaljer:
+            print(f"   Kommende kamper:")
+            for f in fixture_detaljer:
+                fdr_bar = "🟢" if f['fdr'] <= 2 else "🟡" if f['fdr'] == 3 else "🟠" if f['fdr'] == 4 else "🔴"
+                print(f"      GW{f['gw']}: {f['opponent']} ({f['venue']}) - FDR: {f['fdr']} {fdr_bar}")
+            fdr_sum = sum(f['fdr'] for f in fixture_detaljer)
+            print(f"   Gjennomsnitt FDR: {fdr_sum}/{len(fixture_detaljer)} = {fdr_sum/len(fixture_detaljer):.1f}")
         
         print(f"\n💰 VERDI:")
         print(f"   PPM (poeng per million): {spiller['ppm']:.2f}")
@@ -1029,7 +1090,17 @@ class FPLAnalyzer:
         print(f"   Team attack strength: {spiller['team_attack_strength']:.1f}")
         
         print(f"\n📅 FIXTURES:")
-        print(f"   Fixture difficulty: {spiller['fixture_difficulty']:.1f}")
+        print(f"   Fixture difficulty (neste 5): {spiller['fixture_difficulty']:.1f}")
+        
+        # Vis detaljerte fixtures
+        fixture_detaljer = self._hent_fixture_detaljer(spiller['team'], 5)
+        if fixture_detaljer:
+            print(f"   Kommende kamper:")
+            for f in fixture_detaljer:
+                fdr_bar = "🟢" if f['fdr'] <= 2 else "🟡" if f['fdr'] == 3 else "🟠" if f['fdr'] == 4 else "🔴"
+                print(f"      GW{f['gw']}: {f['opponent']} ({f['venue']}) - FDR: {f['fdr']} {fdr_bar}")
+            fdr_sum = sum(f['fdr'] for f in fixture_detaljer)
+            print(f"   Gjennomsnitt FDR: {fdr_sum}/{len(fixture_detaljer)} = {fdr_sum/len(fixture_detaljer):.1f}")
         
         print(f"\n💰 VERDI:")
         print(f"   PPM (poeng per million): {spiller['ppm']:.2f}")
@@ -1366,14 +1437,172 @@ class FPLAnalyzer:
         if forsvar is not None:
             print(forsvar.to_string(index=False))
         
-        # Vis spesifikk analyse for Saliba og Gabriel
-        print("\n\n🔍 ARSENAL-FORSVAR: SALIBA & GABRIEL")
-        print("-"*100)
-        arsenal_forsvar = self.vis_spillere(['Saliba', 'Gabriel'], posisjon='DEF')
-        if arsenal_forsvar is not None:
-            print(arsenal_forsvar.to_string(index=False))
-        
         print("\n" + "="*100)
+        
+        # Vis mitt lag med rangeringer
+        self.vis_mitt_lag(team_id=6740096)
+    
+    def vis_mitt_lag(self, team_id=6740096):
+        """Henter og viser brukerens lag med rangeringer fra analysen"""
+        print(f"\n{'='*100}")
+        print(f"📋 MITT LAG - RANGERING BASERT PÅ ANALYSE")
+        print(f"{'='*100}")
+        
+        # Hent lagets data fra FPL API
+        try:
+            # Finn nåværende gameweek
+            current_gw = None
+            for event in self.data.get('events', []):
+                if event.get('is_current', False):
+                    current_gw = event['id']
+                    break
+            
+            if current_gw is None:
+                # Finn siste finished gameweek
+                for event in reversed(self.data.get('events', [])):
+                    if event.get('finished', False):
+                        current_gw = event['id']
+                        break
+            
+            if current_gw is None:
+                current_gw = 1
+            
+            # Hent lagets picks
+            url = f"https://fantasy.premierleague.com/api/entry/{team_id}/event/{current_gw}/picks/"
+            response = requests.get(url, verify=False, timeout=10)
+            
+            if response.status_code != 200:
+                print(f"Kunne ikke hente lag (status {response.status_code})")
+                return None
+            
+            picks_data = response.json()
+            picks = picks_data.get('picks', [])
+            
+            # Hent laginfo
+            url_entry = f"https://fantasy.premierleague.com/api/entry/{team_id}/"
+            response_entry = requests.get(url_entry, verify=False, timeout=10)
+            if response_entry.status_code == 200:
+                entry_data = response_entry.json()
+                team_name = entry_data.get('name', 'Ukjent lag')
+                print(f"\n🏆 Lag: {team_name}")
+                print(f"   Gameweek: {current_gw}")
+            
+            # Hent rangeringer for hver posisjon
+            print("\nHenter rangeringer...")
+            spisser_df = self.beregn_avansert_spiss_score()
+            midtbane_df = self.beregn_avansert_midtbane_score()
+            forsvar_df = self.beregn_avansert_forsvar_score()
+            
+            # Sorter for å få rangeringer
+            spisser_df = spisser_df.sort_values(by='total_vektet_spiss_vurdering', ascending=False).reset_index(drop=True)
+            midtbane_df = midtbane_df.sort_values(by='total_vektet_midtbane_vurdering', ascending=False).reset_index(drop=True)
+            forsvar_df = forsvar_df.sort_values(by='xPts_adjusted', ascending=False).reset_index(drop=True)
+            
+            # Lag en funksjon for rask oppslag
+            def get_rank(df, player_id, score_col):
+                player_row = df[df['id'] == player_id]
+                if player_row.empty:
+                    return None, None
+                idx = df[df['id'] == player_id].index[0]
+                score = player_row[score_col].values[0]
+                return idx + 1, score
+            
+            print(f"\n{'─'*80}")
+            print(f"{'Pos':<5} {'Spiller':<20} {'Lag':<5} {'Pris':<7} {'Rangering':<12} {'Score':<10}")
+            print(f"{'─'*80}")
+            
+            startere = []
+            benk = []
+            
+            for pick in picks:
+                player_id = pick['element']
+                position = pick['position']  # 1-11 = startere, 12-15 = benk
+                is_captain = pick['is_captain']
+                is_vice = pick['is_vice_captain']
+                
+                # Finn spillerinfo
+                player_info = self.players_df[self.players_df['id'] == player_id]
+                if player_info.empty:
+                    continue
+                
+                player = player_info.iloc[0]
+                name = player['web_name']
+                team = self.teams_df[self.teams_df['id'] == player['team']].iloc[0]['short_name']
+                price = player['now_cost'] / 10
+                pos_type = ['GKP', 'DEF', 'MID', 'FWD'][player['element_type'] - 1]
+                
+                # Finn rangering basert på posisjon
+                if pos_type == 'FWD':
+                    rank, score = get_rank(spisser_df, player_id, 'total_vektet_spiss_vurdering')
+                    total_in_pos = len(spisser_df)
+                elif pos_type == 'MID':
+                    rank, score = get_rank(midtbane_df, player_id, 'total_vektet_midtbane_vurdering')
+                    total_in_pos = len(midtbane_df)
+                elif pos_type == 'DEF':
+                    rank, score = get_rank(forsvar_df, player_id, 'xPts_adjusted')
+                    total_in_pos = len(forsvar_df)
+                else:  # GKP
+                    rank, score = None, None
+                    total_in_pos = 0
+                
+                # Marker kaptein/vice
+                captain_mark = " (C)" if is_captain else " (V)" if is_vice else ""
+                
+                # Lag rangering-tekst
+                if rank:
+                    rank_text = f"#{rank}/{total_in_pos}"
+                    rank_emoji = "🥇" if rank <= 3 else "🥈" if rank <= 10 else "🥉" if rank <= 25 else "⚪"
+                    score_text = f"{score:.1f}"
+                else:
+                    rank_text = "N/A"
+                    rank_emoji = "⚪"
+                    score_text = "N/A"
+                
+                player_data = {
+                    'position': position,
+                    'pos_type': pos_type,
+                    'name': name + captain_mark,
+                    'team': team,
+                    'price': price,
+                    'rank': rank,
+                    'rank_text': rank_text,
+                    'rank_emoji': rank_emoji,
+                    'score_text': score_text
+                }
+                
+                if position <= 11:
+                    startere.append(player_data)
+                else:
+                    benk.append(player_data)
+            
+            # Vis startere
+            print("\n⚽ STARTERE:")
+            for p in startere:
+                print(f"{p['pos_type']:<5} {p['name']:<20} {p['team']:<5} £{p['price']:<6.1f} {p['rank_emoji']} {p['rank_text']:<10} {p['score_text']:<10}")
+            
+            # Vis benk
+            print(f"\n{'─'*80}")
+            print("🪑 BENK:")
+            for p in benk:
+                print(f"{p['pos_type']:<5} {p['name']:<20} {p['team']:<5} £{p['price']:<6.1f} {p['rank_emoji']} {p['rank_text']:<10} {p['score_text']:<10}")
+            
+            print(f"{'─'*80}")
+            
+            # Oppsummering
+            ranks = [p['rank'] for p in startere + benk if p['rank'] is not None]
+            if ranks:
+                avg_rank = sum(ranks) / len(ranks)
+                top_10 = sum(1 for r in ranks if r <= 10)
+                print(f"\n📊 OPPSUMMERING:")
+                print(f"   Gjennomsnittlig rangering: #{avg_rank:.1f}")
+                print(f"   Spillere i topp 10: {top_10}")
+                print(f"   Spillere i topp 25: {sum(1 for r in ranks if r <= 25)}")
+            
+            print(f"\n{'='*100}")
+            
+        except Exception as e:
+            print(f"Feil ved henting av lag: {e}")
+            return None
     
     def _vis_deadline_countdown(self):
         """Viser countdown til neste transfer deadline"""
@@ -1430,7 +1659,9 @@ class FPLAnalyzer:
         spisser = self.beste_spisser_avansert(antall=25, min_minutter=180)
         midtbane = self.beste_midtbanespillere(antall=25, min_minutter=180)
         forsvar = self.beste_forsvarsspillere(antall=25, min_minutter=180)
-        arsenal_forsvar = self.vis_spillere(['Saliba', 'Gabriel'], posisjon='DEF')
+        
+        # Hent mitt lag data
+        mitt_lag_html = self._get_mitt_lag_html(team_id=6740096)
         
         # Hent deadline info
         deadline_html = self._get_deadline_html()
@@ -1655,10 +1886,7 @@ class FPLAnalyzer:
             {self._df_to_html_table(forsvar, 'DEF')}
         </div>
         
-        <div class="highlight-box">
-            <h3>🔍 Arsenal Defense Spotlight: Saliba & Gabriel</h3>
-            {self._df_to_html_table(arsenal_forsvar, 'DEF') if arsenal_forsvar is not None else '<p>Data not available</p>'}
-        </div>
+        {mitt_lag_html}
         
         <div class="footer">
             <p>Generated by FPL Analyzer • Data from Fantasy Premier League API</p>
@@ -1722,6 +1950,246 @@ class FPLAnalyzer:
         except:
             pass
         return ""
+    
+    def _get_mitt_lag_html(self, team_id=6740096):
+        """Genererer HTML for mitt lag-seksjonen"""
+        try:
+            # Finn nåværende gameweek
+            current_gw = None
+            for event in self.data.get('events', []):
+                if event.get('is_current', False):
+                    current_gw = event['id']
+                    break
+            
+            if current_gw is None:
+                for event in reversed(self.data.get('events', [])):
+                    if event.get('finished', False):
+                        current_gw = event['id']
+                        break
+            
+            if current_gw is None:
+                current_gw = 1
+            
+            # Hent lagets picks
+            url = f"https://fantasy.premierleague.com/api/entry/{team_id}/event/{current_gw}/picks/"
+            response = requests.get(url, verify=False, timeout=10)
+            
+            if response.status_code != 200:
+                return ""
+            
+            picks_data = response.json()
+            picks = picks_data.get('picks', [])
+            
+            # Hent laginfo
+            team_name = "Mitt Lag"
+            url_entry = f"https://fantasy.premierleague.com/api/entry/{team_id}/"
+            response_entry = requests.get(url_entry, verify=False, timeout=10)
+            if response_entry.status_code == 200:
+                entry_data = response_entry.json()
+                team_name = entry_data.get('name', 'Mitt Lag')
+            
+            # Hent rangeringer
+            spisser_df = self.beregn_avansert_spiss_score()
+            midtbane_df = self.beregn_avansert_midtbane_score()
+            forsvar_df = self.beregn_avansert_forsvar_score()
+            
+            spisser_df = spisser_df.sort_values(by='total_vektet_spiss_vurdering', ascending=False).reset_index(drop=True)
+            midtbane_df = midtbane_df.sort_values(by='total_vektet_midtbane_vurdering', ascending=False).reset_index(drop=True)
+            forsvar_df = forsvar_df.sort_values(by='xPts_adjusted', ascending=False).reset_index(drop=True)
+            
+            def get_rank(df, player_id, score_col):
+                player_row = df[df['id'] == player_id]
+                if player_row.empty:
+                    return None, None
+                idx = df[df['id'] == player_id].index[0]
+                score = player_row[score_col].values[0]
+                return idx + 1, score
+            
+            # Bygg spillerliste
+            startere_html = ""
+            benk_html = ""
+            all_ranks = []
+            
+            for pick in picks:
+                player_id = pick['element']
+                position = pick['position']
+                is_captain = pick['is_captain']
+                is_vice = pick['is_vice_captain']
+                
+                player_info = self.players_df[self.players_df['id'] == player_id]
+                if player_info.empty:
+                    continue
+                
+                player = player_info.iloc[0]
+                name = player['web_name']
+                team = self.teams_df[self.teams_df['id'] == player['team']].iloc[0]['short_name']
+                price = player['now_cost'] / 10
+                pos_type = ['GKP', 'DEF', 'MID', 'FWD'][player['element_type'] - 1]
+                
+                if pos_type == 'FWD':
+                    rank, score = get_rank(spisser_df, player_id, 'total_vektet_spiss_vurdering')
+                    total_in_pos = len(spisser_df)
+                elif pos_type == 'MID':
+                    rank, score = get_rank(midtbane_df, player_id, 'total_vektet_midtbane_vurdering')
+                    total_in_pos = len(midtbane_df)
+                elif pos_type == 'DEF':
+                    rank, score = get_rank(forsvar_df, player_id, 'xPts_adjusted')
+                    total_in_pos = len(forsvar_df)
+                else:
+                    rank, score = None, None
+                    total_in_pos = 0
+                
+                captain_mark = " (C)" if is_captain else " (V)" if is_vice else ""
+                
+                if rank:
+                    all_ranks.append(rank)
+                    if rank <= 3:
+                        rank_class = "rank-gold"
+                        rank_emoji = "🥇"
+                    elif rank <= 10:
+                        rank_class = "rank-silver"
+                        rank_emoji = "🥈"
+                    elif rank <= 25:
+                        rank_class = "rank-bronze"
+                        rank_emoji = "🥉"
+                    else:
+                        rank_class = "rank-normal"
+                        rank_emoji = ""
+                    rank_text = f"#{rank}/{total_in_pos}"
+                    score_text = f"{score:.1f}"
+                else:
+                    rank_class = "rank-na"
+                    rank_emoji = ""
+                    rank_text = "N/A"
+                    score_text = "-"
+                
+                row_html = f'''
+                <tr>
+                    <td><span class="pos-badge pos-{pos_type.lower()}">{pos_type}</span></td>
+                    <td class="player-name">{name}{captain_mark}</td>
+                    <td><span class="team-badge">{team}</span></td>
+                    <td class="price">£{price:.1f}m</td>
+                    <td><span class="{rank_class}">{rank_emoji} {rank_text}</span></td>
+                    <td>{score_text}</td>
+                </tr>'''
+                
+                if position <= 11:
+                    startere_html += row_html
+                else:
+                    benk_html += row_html
+            
+            # Beregn statistikk
+            avg_rank = sum(all_ranks) / len(all_ranks) if all_ranks else 0
+            top_10 = sum(1 for r in all_ranks if r <= 10)
+            top_25 = sum(1 for r in all_ranks if r <= 25)
+            
+            html = f'''
+        <div class="section my-team-section">
+            <div class="section-header">
+                <span class="section-icon">📋</span>
+                <div>
+                    <div class="section-title">{team_name}</div>
+                    <div class="section-desc">Your team ranked against our analysis • Gameweek {current_gw}</div>
+                </div>
+            </div>
+            
+            <div class="team-stats">
+                <div class="stat-box">
+                    <div class="stat-value">#{avg_rank:.0f}</div>
+                    <div class="stat-label">Avg Rank</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value">{top_10}</div>
+                    <div class="stat-label">In Top 10</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value">{top_25}</div>
+                    <div class="stat-label">In Top 25</div>
+                </div>
+            </div>
+            
+            <h4 style="margin: 20px 0 10px 0; color: #00ff87;">⚽ Starting XI</h4>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Pos</th>
+                        <th>Player</th>
+                        <th>Team</th>
+                        <th>Price</th>
+                        <th>Rank</th>
+                        <th>Score</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {startere_html}
+                </tbody>
+            </table>
+            
+            <h4 style="margin: 20px 0 10px 0; color: #888;">🪑 Bench</h4>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Pos</th>
+                        <th>Player</th>
+                        <th>Team</th>
+                        <th>Price</th>
+                        <th>Rank</th>
+                        <th>Score</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {benk_html}
+                </tbody>
+            </table>
+        </div>
+        
+        <style>
+            .my-team-section {{
+                background: linear-gradient(135deg, rgba(55, 0, 60, 0.3) 0%, rgba(0, 255, 135, 0.1) 100%);
+                border: 2px solid #00ff87;
+            }}
+            .team-stats {{
+                display: flex;
+                justify-content: center;
+                gap: 30px;
+                margin: 20px 0;
+            }}
+            .stat-box {{
+                text-align: center;
+                padding: 15px 25px;
+                background: rgba(0, 255, 135, 0.1);
+                border-radius: 10px;
+            }}
+            .stat-value {{
+                font-size: 2em;
+                font-weight: bold;
+                color: #00ff87;
+            }}
+            .stat-label {{
+                font-size: 0.9em;
+                color: #888;
+            }}
+            .pos-badge {{
+                padding: 3px 8px;
+                border-radius: 5px;
+                font-size: 0.85em;
+                font-weight: bold;
+            }}
+            .pos-gkp {{ background: #ffcc00; color: #000; }}
+            .pos-def {{ background: #00ff87; color: #000; }}
+            .pos-mid {{ background: #00bfff; color: #000; }}
+            .pos-fwd {{ background: #ff6b6b; color: #000; }}
+            .rank-gold {{ color: #ffd700; font-weight: bold; }}
+            .rank-silver {{ color: #c0c0c0; font-weight: bold; }}
+            .rank-bronze {{ color: #cd7f32; font-weight: bold; }}
+            .rank-normal {{ color: #888; }}
+            .rank-na {{ color: #555; }}
+        </style>'''
+            
+            return html
+            
+        except Exception as e:
+            return f"<!-- Error loading team: {e} -->"
     
     def _df_to_html_table(self, df, position_type):
         """Konverterer en DataFrame til en stylet HTML-tabell"""
