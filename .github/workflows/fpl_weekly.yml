@@ -2,10 +2,7 @@ name: FPL Weekly Report
 
 on:
   schedule:
-    # Kjører hver kveld kl 19:00 UTC (20:00 norsk tid)
     - cron: '0 19 * * *'
-  
-  # Tillat manuell kjøring fra GitHub Actions-fanen
   workflow_dispatch:
 
 jobs:
@@ -26,54 +23,45 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
     
-    - name: Check deadline and run analysis
+    - name: Check deadline
       id: deadline_check
       run: |
-        python << 'EOF'
-import requests
-import json
-from datetime import datetime, timezone
+        python -c "
+        import requests
+        from datetime import datetime, timezone
 
-# Hent FPL data
-response = requests.get("https://fantasy.premierleague.com/api/bootstrap-static/", timeout=10)
-data = response.json()
+        response = requests.get('https://fantasy.premierleague.com/api/bootstrap-static/', timeout=10)
+        data = response.json()
 
-# Finn neste gameweek som ikke er ferdig
-neste_gw = None
-for event in data.get('events', []):
-    if not event.get('finished', True):
-        neste_gw = event
-        break
+        neste_gw = None
+        for event in data.get('events', []):
+            if not event.get('finished', True):
+                neste_gw = event
+                break
 
-if neste_gw:
-    deadline_str = neste_gw.get('deadline_time', '')
-    deadline = datetime.fromisoformat(deadline_str.replace('Z', '+00:00'))
-    now = datetime.now(timezone.utc)
-    time_until = deadline - now
-    hours_until = time_until.total_seconds() / 3600
-    
-    gw_number = neste_gw.get('id', '?')
-    
-    print(f"Neste deadline: {deadline}")
-    print(f"Timer til deadline: {hours_until:.1f}")
-    
-    if hours_until <= 24 and hours_until > 0:
-        print("SEND_EMAIL=true - Mindre enn 24 timer til deadline!")
-        with open('send_email.txt', 'w') as f:
-            f.write('true')
-        with open('gw_number.txt', 'w') as f:
-            f.write(str(gw_number))
-        with open('hours_until.txt', 'w') as f:
-            f.write(f"{hours_until:.0f}")
-    else:
-        print(f"Mer enn 24 timer til deadline ({hours_until:.1f} timer) - sender ikke mail")
-        with open('send_email.txt', 'w') as f:
-            f.write('false')
-else:
-    print("Ingen kommende gameweek funnet")
-    with open('send_email.txt', 'w') as f:
-        f.write('false')
-EOF
+        if neste_gw:
+            deadline_str = neste_gw.get('deadline_time', '')
+            deadline = datetime.fromisoformat(deadline_str.replace('Z', '+00:00'))
+            now = datetime.now(timezone.utc)
+            time_until = deadline - now
+            hours_until = time_until.total_seconds() / 3600
+            gw_number = neste_gw.get('id', 0)
+            
+            print(f'Neste deadline: {deadline}')
+            print(f'Timer til deadline: {hours_until:.1f}')
+            
+            if hours_until <= 24 and hours_until > 0:
+                print('SEND_EMAIL=true')
+                open('send_email.txt', 'w').write('true')
+                open('gw_number.txt', 'w').write(str(gw_number))
+                open('hours_until.txt', 'w').write(f'{hours_until:.0f}')
+            else:
+                print(f'Mer enn 24 timer til deadline - sender ikke mail')
+                open('send_email.txt', 'w').write('false')
+        else:
+            print('Ingen kommende gameweek funnet')
+            open('send_email.txt', 'w').write('false')
+        "
     
     - name: Set email flag
       id: set_flag
@@ -91,8 +79,7 @@ EOF
     
     - name: Run FPL analysis script
       if: steps.set_flag.outputs.send_email == 'true'
-      run: |
-        python fpl_analyzer.py > console_output.txt 2>&1
+      run: python fpl_analyzer.py > console_output.txt 2>&1
       continue-on-error: true
     
     - name: Check if report was generated
@@ -133,5 +120,4 @@ EOF
     
     - name: Skip notification
       if: steps.set_flag.outputs.send_email == 'false'
-      run: |
-        echo "⏭️ Skipped - more than 24 hours until deadline"
+      run: echo "Skipped - more than 24 hours until deadline"
