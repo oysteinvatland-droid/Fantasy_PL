@@ -2797,10 +2797,331 @@ class FPLAnalyzer:
         
         html += "</tbody></table>"
         return html
+    
+    def generer_rapport_for_abonnent(self, team_id, name, output_dir="reports"):
+        """Genererer en personlig rapport for en abonnent"""
+        import os
+        
+        # Opprett output-mappe hvis den ikke finnes
+        os.makedirs(output_dir, exist_ok=True)
+        
+        # Generer filnavn basert på team_id
+        filnavn = f"{output_dir}/FPL_Report_{team_id}.html"
+        
+        # Oppdater team_id for mitt lag-seksjonen
+        self._current_subscriber_team_id = team_id
+        self._current_subscriber_name = name
+        
+        # Generer HTML-rapport med personlig lag
+        self._generer_personlig_html_rapport(filnavn, team_id, name)
+        
+        return filnavn
+    
+    def _generer_personlig_html_rapport(self, filnavn, team_id, subscriber_name):
+        """Genererer en personlig HTML-rapport for en abonnent"""
+        
+        # Hent data
+        spisser = self.beste_spisser_avansert(antall=25, min_minutter=180)
+        midtbane = self.beste_midtbanespillere(antall=25, min_minutter=180)
+        forsvar = self.beste_forsvarsspillere(antall=25, min_minutter=180)
+        
+        # Hent personlig lag data
+        mitt_lag_html = self._get_mitt_lag_html(team_id=team_id)
+        
+        # Hent drømmelag HTML
+        drommelag_html = self._get_drommelag_html()
+        
+        # Hent deadline info
+        deadline_html = self._get_deadline_html()
+        
+        html = f'''<!DOCTYPE html>
+<html lang="no">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FPL Report - {subscriber_name}</title>
+    <style>
+        * {{
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }}
+        body {{
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #ffffff;
+        }}
+        .container {{
+            max-width: 1400px;
+            margin: 0 auto;
+        }}
+        .header {{
+            text-align: center;
+            padding: 40px 20px;
+            background: linear-gradient(135deg, #37003c 0%, #00ff87 100%);
+            border-radius: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 40px rgba(0, 255, 135, 0.3);
+        }}
+        .header h1 {{
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }}
+        .header .subtitle {{
+            font-size: 1.2em;
+            opacity: 0.9;
+        }}
+        .personal-greeting {{
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 30px;
+            text-align: center;
+            font-size: 1.3em;
+        }}
+        .deadline-box {{
+            background: linear-gradient(135deg, #ff6b6b 0%, #feca57 100%);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 30px;
+            text-align: center;
+            color: #1a1a2e;
+            font-weight: bold;
+        }}
+        .section {{
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }}
+        .section-header {{
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid rgba(0, 255, 135, 0.3);
+        }}
+        .section-icon {{
+            font-size: 2em;
+        }}
+        .section-title {{
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #00ff87;
+        }}
+        .section-desc {{
+            font-size: 0.9em;
+            color: rgba(255, 255, 255, 0.7);
+            margin-top: 5px;
+        }}
+        table {{
+            width: 100%;
+            border-collapse: collapse;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            overflow: hidden;
+        }}
+        th {{
+            background: linear-gradient(135deg, #37003c 0%, #2d0032 100%);
+            padding: 12px 8px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 0.85em;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }}
+        td {{
+            padding: 10px 8px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            font-size: 0.9em;
+        }}
+        tr:hover {{
+            background: rgba(0, 255, 135, 0.1);
+        }}
+        .medal {{
+            display: inline-block;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 28px;
+            font-weight: bold;
+            font-size: 0.9em;
+        }}
+        .gold {{ background: linear-gradient(135deg, #ffd700 0%, #ffb800 100%); color: #1a1a2e; }}
+        .silver {{ background: linear-gradient(135deg, #c0c0c0 0%, #a8a8a8 100%); color: #1a1a2e; }}
+        .bronze {{ background: linear-gradient(135deg, #cd7f32 0%, #b87333 100%); color: #1a1a2e; }}
+        .rank {{ color: rgba(255, 255, 255, 0.6); }}
+        .pos-badge {{
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 5px;
+            font-size: 0.8em;
+            font-weight: bold;
+        }}
+        .pos-gkp {{ background: #ebff00; color: #1a1a2e; }}
+        .pos-def {{ background: #00ff87; color: #1a1a2e; }}
+        .pos-mid {{ background: #05f0ff; color: #1a1a2e; }}
+        .pos-fwd {{ background: #e90052; color: #ffffff; }}
+        .player-name {{
+            font-weight: 600;
+            color: #ffffff;
+        }}
+        .team-badge {{
+            background: rgba(255, 255, 255, 0.1);
+            padding: 3px 8px;
+            border-radius: 5px;
+            font-size: 0.85em;
+        }}
+        .price {{ color: #00ff87; font-weight: 600; }}
+        .score {{
+            background: linear-gradient(135deg, #00ff87 0%, #00d4aa 100%);
+            color: #1a1a2e;
+            padding: 5px 10px;
+            border-radius: 8px;
+            font-weight: bold;
+        }}
+        .footer {{
+            text-align: center;
+            padding: 30px;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 0.9em;
+        }}
+        .dream-team-section {{
+            background: linear-gradient(135deg, #ffd700 0%, #ff8c00 100%);
+        }}
+        .dream-team-section .section-title {{ color: #1a1a2e; }}
+        .dream-team-section .section-desc {{ color: #333; }}
+        .dream-team-section table {{ background: rgba(255,255,255,0.95); }}
+        .dream-team-section th {{ background: #1a1a2e !important; color: white !important; }}
+        .dream-team-section td {{ color: #333; }}
+        .xpts-badge {{
+            background: linear-gradient(135deg, #00ff87 0%, #00d4aa 100%);
+            color: #1a1a2e;
+            padding: 3px 8px;
+            border-radius: 5px;
+            font-weight: bold;
+        }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⚽ Fantasy Premier League</h1>
+            <div class="subtitle">Ukentlig Spilleranalyse & Anbefalinger</div>
+        </div>
+        
+        <div class="personal-greeting">
+            👋 Hei {subscriber_name}! Her er din personlige FPL-rapport
+        </div>
+        
+        {deadline_html}
+        
+        <div class="section">
+            <div class="section-header">
+                <span class="section-icon">⭐</span>
+                <div>
+                    <div class="section-title">Top 25 Forwards - Expected Points (xPts)</div>
+                    <div class="section-desc">xPts Model: 4×xG + 3×xA + MinPts + Bonus (adjusted for fixtures & playing time)</div>
+                </div>
+            </div>
+            {self._df_to_html_table(spisser, 'FWD')}
+        </div>
+        
+        <div class="section">
+            <div class="section-header">
+                <span class="section-icon">🎯</span>
+                <div>
+                    <div class="section-title">Top 25 Midfielders - Expected Points (xPts)</div>
+                    <div class="section-desc">xPts Model: 5×xG + 3×xA + 1×CS + MinPts + Bonus (adjusted for fixtures & playing time)</div>
+                </div>
+            </div>
+            {self._df_to_html_table(midtbane, 'MID')}
+        </div>
+        
+        <div class="section">
+            <div class="section-header">
+                <span class="section-icon">🛡️</span>
+                <div>
+                    <div class="section-title">Top 25 Defenders - Expected Points (xPts)</div>
+                    <div class="section-desc">xPts Model: 4×CS + 6×xG + 3×xA + MinPts + Bonus (adjusted for fixtures & playing time)</div>
+                </div>
+            </div>
+            {self._df_to_html_table(forsvar, 'DEF')}
+        </div>
+        
+        {drommelag_html}
+        
+        {mitt_lag_html}
+        
+        <div class="footer">
+            <p>Generated by FPL Analyzer • Data from Fantasy Premier League API</p>
+            <p>Report generated: {datetime.now().strftime('%Y-%m-%d %H:%M')}</p>
+        </div>
+    </div>
+</body>
+</html>'''
+        
+        # Skriv til fil
+        with open(filnavn, 'w', encoding='utf-8') as f:
+            f.write(html)
+        
+        print(f"✓ Personlig rapport generert for {subscriber_name}: {filnavn}")
+        return filnavn
+    
+    def generer_alle_abonnent_rapporter(self, subscribers_file="subscribers.json"):
+        """Genererer rapporter for alle abonnenter fra JSON-fil"""
+        import json
+        import os
+        
+        try:
+            with open(subscribers_file, 'r', encoding='utf-8') as f:
+                subscribers = json.load(f)
+            
+            print(f"\n📧 Genererer rapporter for {len(subscribers)} abonnenter...")
+            
+            generated_reports = []
+            for sub in subscribers:
+                name = sub.get('name', 'Unknown')
+                email = sub.get('email', '')
+                team_id = sub.get('team_id', 0)
+                
+                if team_id and email:
+                    filnavn = self.generer_rapport_for_abonnent(team_id, name)
+                    generated_reports.append({
+                        'name': name,
+                        'email': email,
+                        'team_id': team_id,
+                        'report_file': filnavn
+                    })
+                else:
+                    print(f"⚠️ Mangler team_id eller email for {name}")
+            
+            # Lagre liste over genererte rapporter
+            with open('generated_reports.json', 'w', encoding='utf-8') as f:
+                json.dump(generated_reports, f, indent=2)
+            
+            print(f"✓ {len(generated_reports)} rapporter generert")
+            return generated_reports
+            
+        except FileNotFoundError:
+            print(f"⚠️ Finner ikke {subscribers_file}")
+            return []
+        except json.JSONDecodeError as e:
+            print(f"⚠️ Feil i JSON-format: {e}")
+            return []
 
 
 # Hovedprogram
 if __name__ == "__main__":
+    import sys
+    import json
+    
     print("Starter FPL Analysator (Avansert versjon)...")
     print("-"*100)
     
@@ -2809,30 +3130,17 @@ if __name__ == "__main__":
     
     # Hent data
     if analyzer.hent_data():
-        analyzer.hent_fixtures()  # Hent også fixture data
+        analyzer.hent_fixtures()
         analyzer.lag_spillerdataframe()
         
-        # Generer HTML-rapport
-        analyzer.generer_html_rapport("Fantasy_Premier_League_recommendations.html")
-        
-        # Vis også tekst-rapport i konsollen
-        analyzer.vis_rapport()
+        # Sjekk om vi skal generere for abonnenter
+        if len(sys.argv) > 1 and sys.argv[1] == '--subscribers':
+            # Generer rapporter for alle abonnenter
+            subscribers_file = sys.argv[2] if len(sys.argv) > 2 else 'subscribers.json'
+            analyzer.generer_alle_abonnent_rapporter(subscribers_file)
+        else:
+            # Standard: Generer én rapport
+            analyzer.generer_html_rapport("Fantasy_Premier_League_recommendations.html")
+            analyzer.vis_rapport()
     else:
-        print("Kunne ikke hente data fra FPL API")
-    
-    print("\n\nEKSTRA FUNKSJONER:")
-    print("-"*100)
-    print("# Bygg anbefalt lag med budsjett:")
-    print("analyzer.bygg_anbefalt_lag(budsjett=89.0)")
-    print("\n# Sammenlign spesifikke spillere:")
-    print("analyzer.sammenlign_spillere(['Haaland', 'Isak', 'Watkins'])")
-    print("\n# Beste spillere per posisjon:")
-    print("analyzer.beste_spisser_avansert(antall=15, min_minutter=180)")
-    print("analyzer.beste_midtbanespillere(antall=15, min_minutter=180)")
-    print("analyzer.beste_forsvarsspillere(antall=15, min_minutter=180)")
-    print("\n# Spesialanalyser:")
-    print("analyzer.beste_attacking_defenders(antall=10)  # Offensive backs")
-    print("analyzer.finn_differentials(posisjon='DEF', maks_eierskap=10.0)")
-    print("\n# Tilpass vekter for hver posisjon:")
-    print("custom_vekter = {'clean_sheet_potential': 0.35, 'fixture_ease': 0.30, ...}")
-    print("analyzer.beregn_avansert_forsvar_score(vekter=custom_vekter)")
+        print("Kunne ikke hente data fra FPL API"))
