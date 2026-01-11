@@ -2,8 +2,8 @@ name: FPL Weekly Report
 
 on:
   schedule:
-    # Kjører hver fredag kl 08:00 UTC (09:00 norsk tid)
-    - cron: '46 21 * * *'
+    # Kjører hver kveld kl 19:00 UTC (20:00 norsk tid)
+    - cron: '0 19 * * *'
   
   # Tillat manuell kjøring fra GitHub Actions-fanen
   workflow_dispatch:
@@ -26,12 +26,77 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
     
+    - name: Check deadline and run analysis
+      id: deadline_check
+      run: |
+        python << 'EOF'
+import requests
+import json
+from datetime import datetime, timezone
+
+# Hent FPL data
+response = requests.get("https://fantasy.premierleague.com/api/bootstrap-static/", timeout=10)
+data = response.json()
+
+# Finn neste gameweek som ikke er ferdig
+neste_gw = None
+for event in data.get('events', []):
+    if not event.get('finished', True):
+        neste_gw = event
+        break
+
+if neste_gw:
+    deadline_str = neste_gw.get('deadline_time', '')
+    deadline = datetime.fromisoformat(deadline_str.replace('Z', '+00:00'))
+    now = datetime.now(timezone.utc)
+    time_until = deadline - now
+    hours_until = time_until.total_seconds() / 3600
+    
+    gw_number = neste_gw.get('id', '?')
+    
+    print(f"Neste deadline: {deadline}")
+    print(f"Timer til deadline: {hours_until:.1f}")
+    
+    if hours_until <= 24 and hours_until > 0:
+        print("SEND_EMAIL=true - Mindre enn 24 timer til deadline!")
+        with open('send_email.txt', 'w') as f:
+            f.write('true')
+        with open('gw_number.txt', 'w') as f:
+            f.write(str(gw_number))
+        with open('hours_until.txt', 'w') as f:
+            f.write(f"{hours_until:.0f}")
+    else:
+        print(f"Mer enn 24 timer til deadline ({hours_until:.1f} timer) - sender ikke mail")
+        with open('send_email.txt', 'w') as f:
+            f.write('false')
+else:
+    print("Ingen kommende gameweek funnet")
+    with open('send_email.txt', 'w') as f:
+        f.write('false')
+EOF
+    
+    - name: Set email flag
+      id: set_flag
+      run: |
+        SEND_EMAIL=$(cat send_email.txt)
+        echo "send_email=$SEND_EMAIL" >> $GITHUB_OUTPUT
+        echo "Send email: $SEND_EMAIL"
+        
+        if [ "$SEND_EMAIL" = "true" ]; then
+          GW_NUMBER=$(cat gw_number.txt)
+          HOURS_UNTIL=$(cat hours_until.txt)
+          echo "gw_number=$GW_NUMBER" >> $GITHUB_OUTPUT
+          echo "hours_until=$HOURS_UNTIL" >> $GITHUB_OUTPUT
+        fi
+    
     - name: Run FPL analysis script
+      if: steps.set_flag.outputs.send_email == 'true'
       run: |
         python fpl_analyzer.py > console_output.txt 2>&1
       continue-on-error: true
     
     - name: Check if report was generated
+      if: steps.set_flag.outputs.send_email == 'true'
       run: |
         if [ -f "Fantasy_Premier_League_recommendations.html" ]; then
           echo "HTML Report generated successfully"
@@ -42,6 +107,7 @@ jobs:
         fi
     
     - name: Send email with report
+      if: steps.set_flag.outputs.send_email == 'true'
       uses: dawidd6/action-send-mail@v3
       with:
         server_address: smtp.gmail.com
@@ -49,13 +115,14 @@ jobs:
         secure: false
         username: ${{ secrets.EMAIL_USERNAME }}
         password: ${{ secrets.EMAIL_PASSWORD }}
-        subject: "⚽ FPL Weekly Recommendations - Gameweek Update"
+        subject: "⚠️ HUSK Å OPPDATERE LAGET! GW${{ steps.set_flag.outputs.gw_number }} - Kun ${{ steps.set_flag.outputs.hours_until }} timer igjen!"
         to: ${{ secrets.EMAIL_TO }}
         from: FPL Analyzer Bot
         html_body: file://Fantasy_Premier_League_recommendations.html
         attachments: Fantasy_Premier_League_recommendations.html
     
     - name: Upload report as artifact
+      if: steps.set_flag.outputs.send_email == 'true'
       uses: actions/upload-artifact@v4
       with:
         name: fpl-report-${{ github.run_number }}
@@ -63,3 +130,8 @@ jobs:
           Fantasy_Premier_League_recommendations.html
           console_output.txt
         retention-days: 30
+    
+    - name: Skip notification
+      if: steps.set_flag.outputs.send_email == 'false'
+      run: |
+        echo "⏭️ Skipped - more than 24 hours until deadline"
