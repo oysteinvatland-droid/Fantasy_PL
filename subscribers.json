@@ -1,12 +1,12 @@
 [
     {
         "name": "Øystein",
-        "email": "oystein@example.com",
+        "email": "oystein.vatland@gmail.com",
         "team_id": 6740096
     },
     {
-        "name": "Subscriber 2",
-        "email": "subscriber2@example.com",
-        "team_id": 1234567
+        "name": "Oscar",
+        "email": "oscar.vatland@gmail.com",
+        "team_id": 6745291
     }
 ]
