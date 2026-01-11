@@ -4,6 +4,15 @@ on:
   schedule:
     - cron: '0 19 * * *'
   workflow_dispatch:
+    inputs:
+      force_send:
+        description: 'Send e-post uansett deadline (for testing)'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'false'
+          - 'true'
 
 jobs:
   send-fpl-report:
@@ -25,10 +34,15 @@ jobs:
     
     - name: Check deadline
       id: deadline_check
+      env:
+        FORCE_SEND: ${{ github.event.inputs.force_send }}
       run: |
         python -c "
         import requests
+        import os
         from datetime import datetime, timezone
+
+        force_send = os.environ.get('FORCE_SEND', 'false') == 'true'
 
         response = requests.get('https://fantasy.premierleague.com/api/bootstrap-static/', timeout=10)
         data = response.json()
@@ -49,8 +63,14 @@ jobs:
             
             print(f'Neste deadline: {deadline}')
             print(f'Timer til deadline: {hours_until:.1f}')
+            print(f'Force send: {force_send}')
             
-            if hours_until <= 240 and hours_until > 0:
+            if force_send:
+                print('FORCE SEND AKTIVERT - sender e-post uansett!')
+                open('send_email.txt', 'w').write('true')
+                open('gw_number.txt', 'w').write(str(gw_number))
+                open('hours_until.txt', 'w').write(f'{hours_until:.0f}')
+            elif hours_until <= 24 and hours_until > 0:
                 print('SEND_EMAIL=true')
                 open('send_email.txt', 'w').write('true')
                 open('gw_number.txt', 'w').write(str(gw_number))
