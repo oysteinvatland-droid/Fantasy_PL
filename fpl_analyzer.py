@@ -1594,8 +1594,149 @@ class FPLAnalyzer:
         
         print("\n" + "="*100)
         
+        # Vis drømmelaget basert på xPts
+        self.vis_drommelag()
+        
         # Vis mitt lag med rangeringer
         self.vis_mitt_lag(team_id=6740096)
+    
+    def vis_drommelag(self):
+        """Viser det beste laget basert på xPts-rangeringer"""
+        print(f"\n{'='*100}")
+        print(f"🏆 UKENS DRØMMELAG - BASERT PÅ xPts ANALYSE")
+        print(f"{'='*100}")
+        
+        try:
+            # Finn forrige gameweek for poeng
+            prev_gw = None
+            current_gw = None
+            for event in self.data.get('events', []):
+                if event.get('is_current', False):
+                    current_gw = event['id']
+                    prev_gw = current_gw - 1 if current_gw > 1 else 1
+                    break
+            
+            if current_gw is None:
+                for event in reversed(self.data.get('events', [])):
+                    if event.get('finished', False):
+                        prev_gw = event['id']
+                        break
+            
+            # Hent topp spillere fra hver posisjon
+            spisser_df = self.beregn_avansert_spiss_score()
+            midtbane_df = self.beregn_avansert_midtbane_score()
+            forsvar_df = self.beregn_avansert_forsvar_score()
+            
+            # Filtrer og sorter
+            spisser_df = spisser_df[spisser_df['minutes'] >= 180].sort_values(by='xPts_adjusted', ascending=False)
+            midtbane_df = midtbane_df[midtbane_df['minutes'] >= 180].sort_values(by='xPts_adjusted', ascending=False)
+            forsvar_df = forsvar_df[forsvar_df['minutes'] >= 180].sort_values(by='xPts_adjusted', ascending=False)
+            
+            # Finn Kelleher (Liverpool keeper)
+            keeper = self.players_df[
+                (self.players_df['web_name'] == 'Kelleher') & 
+                (self.players_df['element_type'] == 1)
+            ]
+            
+            if keeper.empty:
+                # Fallback: beste keeper basert på poeng
+                keeper = self.players_df[self.players_df['element_type'] == 1].sort_values(by='total_points', ascending=False).head(1)
+            
+            # Hent poeng fra forrige runde for hver spiller
+            def get_prev_gw_points(player_id):
+                try:
+                    url = f"https://fantasy.premierleague.com/api/element-summary/{player_id}/"
+                    response = requests.get(url, verify=False, timeout=5)
+                    if response.status_code == 200:
+                        data = response.json()
+                        history = data.get('history', [])
+                        if history:
+                            # Siste kamp
+                            return history[-1].get('total_points', 0)
+                except:
+                    pass
+                return 0
+            
+            # Bygg drømmelaget
+            dream_team = []
+            
+            # Keeper
+            if not keeper.empty:
+                k = keeper.iloc[0]
+                team_name = self.teams_df[self.teams_df['id'] == k['team']].iloc[0]['short_name']
+                prev_pts = get_prev_gw_points(k['id'])
+                dream_team.append({
+                    'pos': 'GK',
+                    'name': k['web_name'],
+                    'team': team_name,
+                    'price': k['now_cost'] / 10,
+                    'prev_pts': prev_pts,
+                    'total_pts': k['total_points'],
+                    'xPts': '-'
+                })
+            
+            # 3 beste forsvarere
+            for _, row in forsvar_df.head(3).iterrows():
+                team_name = self.teams_df[self.teams_df['id'] == row['team']].iloc[0]['short_name']
+                prev_pts = get_prev_gw_points(row['id'])
+                dream_team.append({
+                    'pos': 'DEF',
+                    'name': row['web_name'],
+                    'team': team_name,
+                    'price': row['pris_mill'],
+                    'prev_pts': prev_pts,
+                    'total_pts': row['total_points'],
+                    'xPts': round(row['xPts_adjusted'], 2)
+                })
+            
+            # 4 beste midtbanespillere
+            for _, row in midtbane_df.head(4).iterrows():
+                team_name = self.teams_df[self.teams_df['id'] == row['team']].iloc[0]['short_name']
+                prev_pts = get_prev_gw_points(row['id'])
+                dream_team.append({
+                    'pos': 'MID',
+                    'name': row['web_name'],
+                    'team': team_name,
+                    'price': row['pris_mill'],
+                    'prev_pts': prev_pts,
+                    'total_pts': row['total_points'],
+                    'xPts': round(row['xPts_adjusted'], 2)
+                })
+            
+            # 3 beste spisser
+            for _, row in spisser_df.head(3).iterrows():
+                team_name = self.teams_df[self.teams_df['id'] == row['team']].iloc[0]['short_name']
+                prev_pts = get_prev_gw_points(row['id'])
+                dream_team.append({
+                    'pos': 'FWD',
+                    'name': row['web_name'],
+                    'team': team_name,
+                    'price': row['pris_mill'],
+                    'prev_pts': prev_pts,
+                    'total_pts': row['total_points'],
+                    'xPts': round(row['xPts_adjusted'], 2)
+                })
+            
+            # Vis tabellen
+            print(f"\n{'Pos':<5} {'Spiller':<18} {'Lag':<5} {'Pris':<7} {'GW Pts':<8} {'Total':<8} {'xPts':<8}")
+            print("-" * 75)
+            
+            total_prev = 0
+            total_season = 0
+            total_price = 0
+            
+            for player in dream_team:
+                print(f"{player['pos']:<5} {player['name']:<18} {player['team']:<5} £{player['price']:<6.1f} {player['prev_pts']:<8} {player['total_pts']:<8} {player['xPts']:<8}")
+                total_prev += player['prev_pts']
+                total_season += player['total_pts']
+                total_price += player['price']
+            
+            print("-" * 75)
+            print(f"{'TOTAL':<5} {'':<18} {'':<5} £{total_price:<6.1f} {total_prev:<8} {total_season:<8}")
+            print(f"\n{'='*100}")
+            
+        except Exception as e:
+            print(f"Kunne ikke generere drømmelag: {e}")
     
     def vis_mitt_lag(self, team_id=6740096):
         """Henter og viser brukerens lag med rangeringer fra analysen"""
@@ -1817,6 +1958,9 @@ class FPLAnalyzer:
         
         # Hent mitt lag data
         mitt_lag_html = self._get_mitt_lag_html(team_id=6740096)
+        
+        # Hent drømmelag HTML
+        drommelag_html = self._get_drommelag_html()
         
         # Hent deadline info
         deadline_html = self._get_deadline_html()
@@ -2041,6 +2185,8 @@ class FPLAnalyzer:
             {self._df_to_html_table(forsvar, 'DEF')}
         </div>
         
+        {drommelag_html}
+        
         {mitt_lag_html}
         
         <div class="footer">
@@ -2105,6 +2251,209 @@ class FPLAnalyzer:
         except:
             pass
         return ""
+    
+    def _get_drommelag_html(self):
+        """Genererer HTML for drømmelaget"""
+        try:
+            # Finn forrige gameweek for poeng
+            prev_gw = None
+            for event in self.data.get('events', []):
+                if event.get('is_current', False):
+                    prev_gw = event['id'] - 1 if event['id'] > 1 else 1
+                    break
+            
+            if prev_gw is None:
+                for event in reversed(self.data.get('events', [])):
+                    if event.get('finished', False):
+                        prev_gw = event['id']
+                        break
+            
+            # Hent topp spillere fra hver posisjon
+            spisser_df = self.beregn_avansert_spiss_score()
+            midtbane_df = self.beregn_avansert_midtbane_score()
+            forsvar_df = self.beregn_avansert_forsvar_score()
+            
+            spisser_df = spisser_df[spisser_df['minutes'] >= 180].sort_values(by='xPts_adjusted', ascending=False)
+            midtbane_df = midtbane_df[midtbane_df['minutes'] >= 180].sort_values(by='xPts_adjusted', ascending=False)
+            forsvar_df = forsvar_df[forsvar_df['minutes'] >= 180].sort_values(by='xPts_adjusted', ascending=False)
+            
+            # Finn Kelleher
+            keeper = self.players_df[
+                (self.players_df['web_name'] == 'Kelleher') & 
+                (self.players_df['element_type'] == 1)
+            ]
+            if keeper.empty:
+                keeper = self.players_df[self.players_df['element_type'] == 1].sort_values(by='total_points', ascending=False).head(1)
+            
+            def get_prev_gw_points(player_id):
+                try:
+                    url = f"https://fantasy.premierleague.com/api/element-summary/{player_id}/"
+                    response = requests.get(url, verify=False, timeout=5)
+                    if response.status_code == 200:
+                        data = response.json()
+                        history = data.get('history', [])
+                        if history:
+                            return history[-1].get('total_points', 0)
+                except:
+                    pass
+                return 0
+            
+            # Bygg drømmelaget
+            rows_html = ""
+            total_prev = 0
+            total_season = 0
+            total_price = 0
+            
+            # Keeper
+            if not keeper.empty:
+                k = keeper.iloc[0]
+                team_name = self.teams_df[self.teams_df['id'] == k['team']].iloc[0]['short_name']
+                prev_pts = get_prev_gw_points(k['id'])
+                total_prev += prev_pts
+                total_season += k['total_points']
+                total_price += k['now_cost'] / 10
+                rows_html += f'''
+                <tr>
+                    <td><span class="pos-badge pos-gkp">GK</span></td>
+                    <td class="player-name">{k['web_name']}</td>
+                    <td><span class="team-badge">{team_name}</span></td>
+                    <td class="price">£{k['now_cost']/10:.1f}m</td>
+                    <td>{prev_pts}</td>
+                    <td>{k['total_points']}</td>
+                    <td>-</td>
+                </tr>'''
+            
+            # 3 forsvarere
+            for _, row in forsvar_df.head(3).iterrows():
+                team_name = self.teams_df[self.teams_df['id'] == row['team']].iloc[0]['short_name']
+                prev_pts = get_prev_gw_points(row['id'])
+                total_prev += prev_pts
+                total_season += row['total_points']
+                total_price += row['pris_mill']
+                rows_html += f'''
+                <tr>
+                    <td><span class="pos-badge pos-def">DEF</span></td>
+                    <td class="player-name">{row['web_name']}</td>
+                    <td><span class="team-badge">{team_name}</span></td>
+                    <td class="price">£{row['pris_mill']:.1f}m</td>
+                    <td>{prev_pts}</td>
+                    <td>{row['total_points']}</td>
+                    <td><span class="xpts-badge">{row['xPts_adjusted']:.2f}</span></td>
+                </tr>'''
+            
+            # 4 midtbanespillere
+            for _, row in midtbane_df.head(4).iterrows():
+                team_name = self.teams_df[self.teams_df['id'] == row['team']].iloc[0]['short_name']
+                prev_pts = get_prev_gw_points(row['id'])
+                total_prev += prev_pts
+                total_season += row['total_points']
+                total_price += row['pris_mill']
+                rows_html += f'''
+                <tr>
+                    <td><span class="pos-badge pos-mid">MID</span></td>
+                    <td class="player-name">{row['web_name']}</td>
+                    <td><span class="team-badge">{team_name}</span></td>
+                    <td class="price">£{row['pris_mill']:.1f}m</td>
+                    <td>{prev_pts}</td>
+                    <td>{row['total_points']}</td>
+                    <td><span class="xpts-badge">{row['xPts_adjusted']:.2f}</span></td>
+                </tr>'''
+            
+            # 3 spisser
+            for _, row in spisser_df.head(3).iterrows():
+                team_name = self.teams_df[self.teams_df['id'] == row['team']].iloc[0]['short_name']
+                prev_pts = get_prev_gw_points(row['id'])
+                total_prev += prev_pts
+                total_season += row['total_points']
+                total_price += row['pris_mill']
+                rows_html += f'''
+                <tr>
+                    <td><span class="pos-badge pos-fwd">FWD</span></td>
+                    <td class="player-name">{row['web_name']}</td>
+                    <td><span class="team-badge">{team_name}</span></td>
+                    <td class="price">£{row['pris_mill']:.1f}m</td>
+                    <td>{prev_pts}</td>
+                    <td>{row['total_points']}</td>
+                    <td><span class="xpts-badge">{row['xPts_adjusted']:.2f}</span></td>
+                </tr>'''
+            
+            html = f'''
+        <div class="section dream-team-section">
+            <div class="section-header">
+                <span class="section-icon">🏆</span>
+                <div>
+                    <div class="section-title">Ukens Drømmelag</div>
+                    <div class="section-desc">Beste lag basert på xPts-analyse (3-4-3 formasjon med Kelleher i mål)</div>
+                </div>
+            </div>
+            
+            <table>
+                <thead>
+                    <tr>
+                        <th>Pos</th>
+                        <th>Spiller</th>
+                        <th>Lag</th>
+                        <th>Pris</th>
+                        <th>GW Pts</th>
+                        <th>Total</th>
+                        <th>xPts</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {rows_html}
+                </tbody>
+                <tfoot>
+                    <tr class="total-row">
+                        <td colspan="3"><strong>TOTAL</strong></td>
+                        <td class="price"><strong>£{total_price:.1f}m</strong></td>
+                        <td><strong>{total_prev}</strong></td>
+                        <td><strong>{total_season}</strong></td>
+                        <td></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+        
+        <style>
+            .dream-team-section {{
+                background: linear-gradient(135deg, #ffd700 0%, #ff8c00 100%);
+                border: none;
+            }}
+            .dream-team-section .section-title {{
+                color: #1a1a2e;
+            }}
+            .dream-team-section .section-desc {{
+                color: #333;
+            }}
+            .dream-team-section table {{
+                background: rgba(255,255,255,0.95);
+            }}
+            .dream-team-section th {{
+                background: #1a1a2e !important;
+                color: white !important;
+            }}
+            .dream-team-section td {{
+                color: #333;
+            }}
+            .dream-team-section .total-row {{
+                background: #f0f0f0;
+            }}
+            .dream-team-section .total-row td {{
+                border-top: 2px solid #1a1a2e;
+            }}
+            .xpts-badge {{
+                background: linear-gradient(135deg, #00ff87 0%, #00d4aa 100%);
+                color: #1a1a2e;
+                padding: 3px 8px;
+                border-radius: 5px;
+                font-weight: bold;
+            }}
+        </style>'''
+            
+            return html
+            
+        except Exception as e:
+            return f"<!-- Error generating dream team: {e} -->"
     
     def _get_mitt_lag_html(self, team_id=6740096):
         """Genererer HTML for mitt lag-seksjonen"""
