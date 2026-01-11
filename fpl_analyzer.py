@@ -3161,4 +3161,4 @@ if __name__ == "__main__":
             analyzer.generer_html_rapport("Fantasy_Premier_League_recommendations.html")
             analyzer.vis_rapport()
     else:
-        print("Kunne ikke hente data fra FPL API"))
+        print("Kunne ikke hente data fra FPL API")
