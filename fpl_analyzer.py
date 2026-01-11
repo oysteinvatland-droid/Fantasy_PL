@@ -3080,6 +3080,10 @@ class FPLAnalyzer:
         import os
         
         try:
+            print(f"\n📂 Ser etter abonnentfil: {subscribers_file}")
+            print(f"📂 Nåværende mappe: {os.getcwd()}")
+            print(f"📂 Filer i mappen: {os.listdir('.')}")
+            
             with open(subscribers_file, 'r', encoding='utf-8') as f:
                 subscribers = json.load(f)
             
@@ -3091,29 +3095,43 @@ class FPLAnalyzer:
                 email = sub.get('email', '')
                 team_id = sub.get('team_id', 0)
                 
+                print(f"  Behandler: {name} (team_id={team_id}, email={email})")
+                
                 if team_id and email:
-                    filnavn = self.generer_rapport_for_abonnent(team_id, name)
-                    generated_reports.append({
-                        'name': name,
-                        'email': email,
-                        'team_id': team_id,
-                        'report_file': filnavn
-                    })
+                    try:
+                        filnavn = self.generer_rapport_for_abonnent(team_id, name)
+                        generated_reports.append({
+                            'name': name,
+                            'email': email,
+                            'team_id': team_id,
+                            'report_file': filnavn
+                        })
+                    except Exception as e:
+                        print(f"  ⚠️ Feil ved generering for {name}: {e}")
                 else:
-                    print(f"⚠️ Mangler team_id eller email for {name}")
+                    print(f"  ⚠️ Mangler team_id eller email for {name}")
             
             # Lagre liste over genererte rapporter
+            print(f"\n💾 Lagrer generated_reports.json med {len(generated_reports)} rapporter...")
             with open('generated_reports.json', 'w', encoding='utf-8') as f:
                 json.dump(generated_reports, f, indent=2)
             
             print(f"✓ {len(generated_reports)} rapporter generert")
+            print(f"📂 Filer etter generering: {os.listdir('.')}")
+            
             return generated_reports
             
-        except FileNotFoundError:
-            print(f"⚠️ Finner ikke {subscribers_file}")
+        except FileNotFoundError as e:
+            print(f"⚠️ Finner ikke {subscribers_file}: {e}")
+            print(f"📂 Filer i mappen: {os.listdir('.')}")
             return []
         except json.JSONDecodeError as e:
             print(f"⚠️ Feil i JSON-format: {e}")
+            return []
+        except Exception as e:
+            print(f"⚠️ Uventet feil: {e}")
+            import traceback
+            traceback.print_exc()
             return []
 
 
