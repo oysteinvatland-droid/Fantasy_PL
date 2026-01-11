@@ -100,8 +100,37 @@ jobs:
     - name: Run FPL analysis for all subscribers
       if: steps.set_flag.outputs.send_email == 'true'
       run: |
-        python fpl_analyzer.py --subscribers subscribers.json > console_output.txt 2>&1
-      continue-on-error: true
+        echo "=== Starting FPL Analysis ==="
+        echo "Current directory: $(pwd)"
+        echo "Files in directory:"
+        ls -la
+        echo ""
+        echo "=== Running script ==="
+        python fpl_analyzer.py --subscribers subscribers.json 2>&1 | tee console_output.txt
+        echo ""
+        echo "=== Script finished ==="
+        echo "Files after script:"
+        ls -la
+        echo ""
+        if [ -d "reports" ]; then
+          echo "Files in reports/:"
+          ls -la reports/
+        fi
+    
+    - name: Check generated reports
+      if: steps.set_flag.outputs.send_email == 'true'
+      run: |
+        echo "Checking for generated_reports.json..."
+        if [ -f "generated_reports.json" ]; then
+          echo "✓ File exists!"
+          echo "Content:"
+          cat generated_reports.json
+        else
+          echo "✗ File not found!"
+          echo "Console output:"
+          cat console_output.txt
+          exit 1
+        fi
     
     - name: Send emails to all subscribers
       if: steps.set_flag.outputs.send_email == 'true'
@@ -122,8 +151,13 @@ jobs:
         try:
             with open('generated_reports.json', 'r') as f:
                 reports = json.load(f)
-        except:
-            print("Ingen rapporter funnet")
+            print(f"Fant {len(reports)} rapporter")
+        except Exception as e:
+            print(f"Feil ved lesing av rapporter: {e}")
+            exit(1)
+
+        if len(reports) == 0:
+            print("Ingen rapporter å sende!")
             exit(1)
 
         # E-post innstillinger
@@ -137,15 +171,20 @@ jobs:
         subject = f"⚠️ HUSK Å OPPDATERE LAGET! GW{gw_number} - Kun {hours_until} timer igjen!"
 
         # Koble til SMTP
+        print(f"Kobler til {smtp_server}...")
         server = smtplib.SMTP(smtp_server, smtp_port)
         server.starttls()
         server.login(username, password)
+        print("Innlogget!")
 
         for report in reports:
             try:
                 email = report['email']
                 name = report['name']
                 report_file = report['report_file']
+                
+                print(f"Sender til {name} ({email})...")
+                print(f"  Rapport: {report_file}")
                 
                 # Les HTML-rapport
                 with open(report_file, 'r', encoding='utf-8') as f:
@@ -163,13 +202,13 @@ jobs:
                 
                 # Send
                 server.sendmail(username, email, msg.as_string())
-                print(f"✓ E-post sendt til {name} ({email})")
+                print(f"  ✓ Sendt!")
                 
             except Exception as e:
-                print(f"✗ Feil ved sending til {report.get('email', 'unknown')}: {e}")
+                print(f"  ✗ Feil: {e}")
 
         server.quit()
-        print(f"\nFerdig! Sendt {len(reports)} e-poster.")
+        print(f"\nFerdig! Sendt til {len(reports)} mottakere.")
         EMAILSCRIPT
     
     - name: Upload reports as artifact
