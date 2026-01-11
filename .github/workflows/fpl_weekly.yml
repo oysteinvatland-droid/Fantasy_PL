@@ -50,7 +50,7 @@ jobs:
             print(f'Neste deadline: {deadline}')
             print(f'Timer til deadline: {hours_until:.1f}')
             
-            if hours_until <= 240 and hours_until > 0:
+            if hours_until <= 24 and hours_until > 0:
                 print('SEND_EMAIL=true')
                 open('send_email.txt', 'w').write('true')
                 open('gw_number.txt', 'w').write(str(gw_number))
