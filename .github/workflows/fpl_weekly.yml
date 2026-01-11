@@ -50,7 +50,7 @@ jobs:
             print(f'Neste deadline: {deadline}')
             print(f'Timer til deadline: {hours_until:.1f}')
             
-            if hours_until <= 24 and hours_until > 0:
+            if hours_until <= 240 and hours_until > 0:
                 print('SEND_EMAIL=true')
                 open('send_email.txt', 'w').write('true')
                 open('gw_number.txt', 'w').write(str(gw_number))
@@ -77,45 +77,90 @@ jobs:
           echo "hours_until=$HOURS_UNTIL" >> $GITHUB_OUTPUT
         fi
     
-    - name: Run FPL analysis script
-      if: steps.set_flag.outputs.send_email == 'true'
-      run: python fpl_analyzer.py > console_output.txt 2>&1
-      continue-on-error: true
-    
-    - name: Check if report was generated
+    - name: Run FPL analysis for all subscribers
       if: steps.set_flag.outputs.send_email == 'true'
       run: |
-        if [ -f "Fantasy_Premier_League_recommendations.html" ]; then
-          echo "HTML Report generated successfully"
-        else
-          echo "HTML Report generation failed"
-          cat console_output.txt
-          exit 1
-        fi
+        python fpl_analyzer.py --subscribers subscribers.json > console_output.txt 2>&1
+      continue-on-error: true
     
-    - name: Send email with report
+    - name: Send emails to all subscribers
       if: steps.set_flag.outputs.send_email == 'true'
-      uses: dawidd6/action-send-mail@v3
-      with:
-        server_address: smtp.gmail.com
-        server_port: 587
-        secure: false
-        username: ${{ secrets.EMAIL_USERNAME }}
-        password: ${{ secrets.EMAIL_PASSWORD }}
-        subject: "⚠️ HUSK Å OPPDATERE LAGET! GW${{ steps.set_flag.outputs.gw_number }} - Kun ${{ steps.set_flag.outputs.hours_until }} timer igjen!"
-        to: ${{ secrets.EMAIL_TO }}
-        from: FPL Analyzer Bot
-        html_body: file://Fantasy_Premier_League_recommendations.html
-        attachments: Fantasy_Premier_League_recommendations.html
+      env:
+        EMAIL_USERNAME: ${{ secrets.EMAIL_USERNAME }}
+        EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+        GW_NUMBER: ${{ steps.set_flag.outputs.gw_number }}
+        HOURS_UNTIL: ${{ steps.set_flag.outputs.hours_until }}
+      run: |
+        python << 'EMAILSCRIPT'
+        import json
+        import smtplib
+        import os
+        from email.mime.text import MIMEText
+        from email.mime.multipart import MIMEMultipart
+
+        # Les genererte rapporter
+        try:
+            with open('generated_reports.json', 'r') as f:
+                reports = json.load(f)
+        except:
+            print("Ingen rapporter funnet")
+            exit(1)
+
+        # E-post innstillinger
+        smtp_server = "smtp.gmail.com"
+        smtp_port = 587
+        username = os.environ.get('EMAIL_USERNAME')
+        password = os.environ.get('EMAIL_PASSWORD')
+        gw_number = os.environ.get('GW_NUMBER', '?')
+        hours_until = os.environ.get('HOURS_UNTIL', '?')
+
+        subject = f"⚠️ HUSK Å OPPDATERE LAGET! GW{gw_number} - Kun {hours_until} timer igjen!"
+
+        # Koble til SMTP
+        server = smtplib.SMTP(smtp_server, smtp_port)
+        server.starttls()
+        server.login(username, password)
+
+        for report in reports:
+            try:
+                email = report['email']
+                name = report['name']
+                report_file = report['report_file']
+                
+                # Les HTML-rapport
+                with open(report_file, 'r', encoding='utf-8') as f:
+                    html_content = f.read()
+                
+                # Lag e-post
+                msg = MIMEMultipart('alternative')
+                msg['Subject'] = subject
+                msg['From'] = f"FPL Analyzer Bot <{username}>"
+                msg['To'] = email
+                
+                # HTML innhold
+                html_part = MIMEText(html_content, 'html')
+                msg.attach(html_part)
+                
+                # Send
+                server.sendmail(username, email, msg.as_string())
+                print(f"✓ E-post sendt til {name} ({email})")
+                
+            except Exception as e:
+                print(f"✗ Feil ved sending til {report.get('email', 'unknown')}: {e}")
+
+        server.quit()
+        print(f"\nFerdig! Sendt {len(reports)} e-poster.")
+        EMAILSCRIPT
     
-    - name: Upload report as artifact
+    - name: Upload reports as artifact
       if: steps.set_flag.outputs.send_email == 'true'
       uses: actions/upload-artifact@v4
       with:
-        name: fpl-report-${{ github.run_number }}
+        name: fpl-reports-${{ github.run_number }}
         path: |
-          Fantasy_Premier_League_recommendations.html
+          reports/
           console_output.txt
+          generated_reports.json
         retention-days: 30
     
     - name: Skip notification
