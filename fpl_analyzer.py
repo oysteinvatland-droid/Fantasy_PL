@@ -2029,12 +2029,11 @@ class FPLAnalyzer:
             50% {{ transform: scale(1.02); }}
         }}
         .section {{
-            background: rgba(255, 255, 255, 0.05);
+            background: #d0e8f7;
             border-radius: 15px;
             padding: 25px;
             margin-bottom: 25px;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            border: 1px solid #a0c4e0;
         }}
         .section-header {{
             display: flex;
@@ -2042,28 +2041,30 @@ class FPLAnalyzer:
             gap: 15px;
             margin-bottom: 20px;
             padding-bottom: 15px;
-            border-bottom: 2px solid rgba(0, 255, 135, 0.3);
+            border-bottom: 2px solid #4a90c2;
         }}
         .section-icon {{
             font-size: 2em;
         }}
         .section-title {{
             font-size: 1.5em;
-            color: #00ff87;
+            color: #1a365d;
+            font-weight: bold;
         }}
         .section-desc {{
             font-size: 0.9em;
-            color: rgba(255, 255, 255, 0.7);
+            color: #2d3748;
             margin-top: 5px;
         }}
         table {{
             width: 100%;
             border-collapse: collapse;
             font-size: 0.9em;
+            background: #e8e8e8;
         }}
         th {{
-            background: #a8d4f0;
-            color: #000000;
+            background: #4a90c2;
+            color: #ffffff;
             padding: 12px 8px;
             text-align: left;
             font-weight: 600;
@@ -2072,40 +2073,40 @@ class FPLAnalyzer:
         }}
         td {{
             padding: 10px 8px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            border-bottom: 1px solid #c0c0c0;
+            color: #1a1a1a;
+            background: #f5f5f5;
         }}
-        tr:hover {{
-            background: rgba(0, 255, 135, 0.1);
+        tr:hover td {{
+            background: #ddeeff;
         }}
-        tr:nth-child(1) td {{ background: rgba(255, 215, 0, 0.2); }}
-        tr:nth-child(2) td {{ background: rgba(192, 192, 192, 0.15); }}
-        tr:nth-child(3) td {{ background: rgba(205, 127, 50, 0.15); }}
+        tr:nth-child(1) td {{ background: rgba(255, 215, 0, 0.35); }}
+        tr:nth-child(2) td {{ background: rgba(192, 192, 192, 0.4); }}
+        tr:nth-child(3) td {{ background: rgba(205, 127, 50, 0.3); }}
         .rank {{
             font-weight: bold;
-            color: #00ff87;
+            color: #1a365d;
         }}
         .player-name {{
             font-weight: 600;
             color: #000000;
-            background: #ffffff;
-            padding: 3px 8px;
-            border-radius: 5px;
         }}
         .team-badge {{
             background: #ffffff;
-            color: #000000;
+            color: #2d3748;
             padding: 3px 8px;
             border-radius: 5px;
             font-size: 0.85em;
             font-weight: 600;
+            border: 1px solid #cbd5e0;
         }}
         .price {{
-            color: #00ff87;
+            color: #2b6cb0;
             font-weight: 600;
         }}
         .score {{
-            background: linear-gradient(135deg, #00ff87 0%, #00d4aa 100%);
-            color: #1a1a2e;
+            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+            color: #ffffff;
             padding: 5px 10px;
             border-radius: 8px;
             font-weight: bold;
@@ -2113,7 +2114,7 @@ class FPLAnalyzer:
         .footer {{
             text-align: center;
             padding: 30px;
-            color: rgba(255, 255, 255, 0.5);
+            color: #718096;
             font-size: 0.9em;
         }}
         .highlight-box {{
@@ -2892,11 +2893,11 @@ class FPLAnalyzer:
             font-weight: bold;
         }}
         .section {{
-            background: rgba(255, 255, 255, 0.05);
+            background: #d0e8f7;
             border-radius: 15px;
             padding: 25px;
             margin-bottom: 25px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            border: 1px solid #a0c4e0;
         }}
         .section-header {{
             display: flex;
@@ -2904,7 +2905,7 @@ class FPLAnalyzer:
             gap: 15px;
             margin-bottom: 20px;
             padding-bottom: 15px;
-            border-bottom: 2px solid rgba(0, 255, 135, 0.3);
+            border-bottom: 2px solid #4a90c2;
         }}
         .section-icon {{
             font-size: 2em;
@@ -2912,22 +2913,23 @@ class FPLAnalyzer:
         .section-title {{
             font-size: 1.5em;
             font-weight: bold;
-            color: #00ff87;
+            color: #1a365d;
         }}
         .section-desc {{
             font-size: 0.9em;
-            color: rgba(255, 255, 255, 0.7);
+            color: #2d3748;
             margin-top: 5px;
         }}
         table {{
             width: 100%;
             border-collapse: collapse;
-            background: rgba(0, 0, 0, 0.3);
+            background: #e8e8e8;
             border-radius: 10px;
             overflow: hidden;
         }}
         th {{
-            background: linear-gradient(135deg, #37003c 0%, #2d0032 100%);
+            background: #4a90c2;
+            color: #ffffff;
             padding: 12px 8px;
             text-align: left;
             font-weight: 600;
@@ -2937,12 +2939,17 @@ class FPLAnalyzer:
         }}
         td {{
             padding: 10px 8px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            border-bottom: 1px solid #c0c0c0;
             font-size: 0.9em;
+            color: #1a1a1a;
+            background: #f5f5f5;
         }}
-        tr:hover {{
-            background: rgba(0, 255, 135, 0.1);
+        tr:hover td {{
+            background: #ddeeff;
         }}
+        tr:nth-child(1) td {{ background: rgba(255, 215, 0, 0.35); }}
+        tr:nth-child(2) td {{ background: rgba(192, 192, 192, 0.4); }}
+        tr:nth-child(3) td {{ background: rgba(205, 127, 50, 0.3); }}
         .medal {{
             display: inline-block;
             width: 28px;
@@ -2956,7 +2963,7 @@ class FPLAnalyzer:
         .gold {{ background: linear-gradient(135deg, #ffd700 0%, #ffb800 100%); color: #1a1a2e; }}
         .silver {{ background: linear-gradient(135deg, #c0c0c0 0%, #a8a8a8 100%); color: #1a1a2e; }}
         .bronze {{ background: linear-gradient(135deg, #cd7f32 0%, #b87333 100%); color: #1a1a2e; }}
-        .rank {{ color: rgba(255, 255, 255, 0.6); }}
+        .rank {{ color: #4a5568; font-weight: bold; }}
         .pos-badge {{
             display: inline-block;
             padding: 3px 8px;
@@ -2970,15 +2977,17 @@ class FPLAnalyzer:
         .pos-fwd {{ background: #e90052; color: #ffffff; }}
         .player-name {{
             font-weight: 600;
-            color: #ffffff;
+            color: #000000;
         }}
         .team-badge {{
-            background: rgba(255, 255, 255, 0.1);
+            background: #ffffff;
+            color: #2d3748;
             padding: 3px 8px;
             border-radius: 5px;
             font-size: 0.85em;
+            border: 1px solid #cbd5e0;
         }}
-        .price {{ color: #00ff87; font-weight: 600; }}
+        .price {{ color: #2b6cb0; font-weight: 600; }}
         .score {{
             background: linear-gradient(135deg, #00ff87 0%, #00d4aa 100%);
             color: #1a1a2e;
