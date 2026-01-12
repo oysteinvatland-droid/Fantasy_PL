@@ -97,37 +97,103 @@ jobs:
           echo "hours_until=$HOURS_UNTIL" >> $GITHUB_OUTPUT
         fi
     
+    - name: Fetch subscribers from Google Sheets
+      if: steps.set_flag.outputs.send_email == 'true'
+      run: |
+        echo "=== Fetching subscribers from Google Sheets ==="
+        python3 << 'EOF'
+import csv
+import json
+import requests
+from io import StringIO
+
+SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSoJcowM4KinERx4akJDe2HM1cgtvbXPRgcTXMdbWt0FY2OXEJ5K9vGvpuQh5FwtZauSDAcmfEfzKYh/pub?output=csv"
+
+print(f"Henter fra: {SHEET_URL}")
+response = requests.get(SHEET_URL, timeout=30)
+print(f"Status: {response.status_code}")
+response.raise_for_status()
+
+print(f"CSV data mottatt ({len(response.text)} bytes)")
+print("Første 500 tegn:")
+print(response.text[:500])
+print("---")
+
+# Parse CSV
+csv_data = StringIO(response.text)
+reader = csv.DictReader(csv_data)
+
+# Vis kolonnenavn
+rows = list(reader)
+if rows:
+    print(f"Kolonner funnet: {list(rows[0].keys())}")
+
+subscribers = []
+for row in rows:
+    print(f"Rad: {row}")
+    
+    # Google Forms kolonner - prøv flere varianter
+    name = (row.get('Navn') or row.get('Name') or row.get('navn') or '').strip()
+    email = (row.get('E-post') or row.get('Email') or row.get('E-mail') or row.get('e-post') or '').strip()
+    team_id_str = (row.get('FPL Team ID') or row.get('Team ID') or row.get('Lag-id') or row.get('team_id') or row.get('Lag-ID') or '').strip()
+    
+    print(f"  Parsed: name={name}, email={email}, team_id_str={team_id_str}")
+    
+    try:
+        team_id = int(team_id_str)
+    except (ValueError, TypeError):
+        print(f"  ⚠️ Ugyldig team_id: {team_id_str}")
+        continue
+    
+    if name and email and team_id:
+        subscribers.append({
+            'name': name,
+            'email': email,
+            'team_id': team_id
+        })
+        print(f"  ✓ Lagt til!")
+
+print(f"\nTotalt {len(subscribers)} abonnenter funnet")
+
+# Lagre til JSON
+with open('subscribers.json', 'w', encoding='utf-8') as f:
+    json.dump(subscribers, f, indent=2, ensure_ascii=False)
+
+print("Lagret til subscribers.json")
+
+# Verifiser
+with open('subscribers.json', 'r') as f:
+    print(f"Innhold: {f.read()}")
+EOF
+        echo "=== Fetch complete ==="
+        ls -la subscribers.json
+    
     - name: Run FPL analysis for all subscribers
       if: steps.set_flag.outputs.send_email == 'true'
       run: |
         echo "=== Starting FPL Analysis ==="
-        echo "Current directory: $(pwd)"
-        echo "Files in directory:"
+        echo "Files before:"
         ls -la
+        echo ""
+        echo "Subscribers content:"
+        cat subscribers.json
         echo ""
         echo "=== Running script ==="
         python fpl_analyzer.py --subscribers subscribers.json 2>&1 | tee console_output.txt
         echo ""
         echo "=== Script finished ==="
-        echo "Files after script:"
-        ls -la
-        echo ""
-        if [ -d "reports" ]; then
-          echo "Files in reports/:"
-          ls -la reports/
-        fi
     
     - name: Check generated reports
       if: steps.set_flag.outputs.send_email == 'true'
       run: |
         echo "Checking for generated_reports.json..."
+        ls -la
         if [ -f "generated_reports.json" ]; then
           echo "✓ File exists!"
-          echo "Content:"
           cat generated_reports.json
         else
           echo "✗ File not found!"
-          echo "Console output:"
+          echo "=== Console output ==="
           cat console_output.txt
           exit 1
         fi
@@ -140,76 +206,64 @@ jobs:
         GW_NUMBER: ${{ steps.set_flag.outputs.gw_number }}
         HOURS_UNTIL: ${{ steps.set_flag.outputs.hours_until }}
       run: |
-        python << 'EMAILSCRIPT'
-        import json
-        import smtplib
-        import os
-        from email.mime.text import MIMEText
-        from email.mime.multipart import MIMEMultipart
+        python3 << 'EOF'
+import json
+import smtplib
+import os
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
-        # Les genererte rapporter
-        try:
-            with open('generated_reports.json', 'r') as f:
-                reports = json.load(f)
-            print(f"Fant {len(reports)} rapporter")
-        except Exception as e:
-            print(f"Feil ved lesing av rapporter: {e}")
-            exit(1)
+with open('generated_reports.json', 'r') as f:
+    reports = json.load(f)
+print(f"Fant {len(reports)} rapporter")
 
-        if len(reports) == 0:
-            print("Ingen rapporter å sende!")
-            exit(1)
+if len(reports) == 0:
+    print("Ingen rapporter!")
+    exit(1)
 
-        # E-post innstillinger
-        smtp_server = "smtp.gmail.com"
-        smtp_port = 587
-        username = os.environ.get('EMAIL_USERNAME')
-        password = os.environ.get('EMAIL_PASSWORD')
-        gw_number = os.environ.get('GW_NUMBER', '?')
-        hours_until = os.environ.get('HOURS_UNTIL', '?')
+smtp_server = "smtp.gmail.com"
+smtp_port = 587
+username = os.environ.get('EMAIL_USERNAME')
+password = os.environ.get('EMAIL_PASSWORD')
+gw_number = os.environ.get('GW_NUMBER', '?')
+hours_until = os.environ.get('HOURS_UNTIL', '?')
 
-        subject = f"⚠️ HUSK Å OPPDATERE LAGET! GW{gw_number} - Kun {hours_until} timer igjen!"
+subject = f"⚠️ HUSK Å OPPDATERE LAGET! GW{gw_number} - Kun {hours_until} timer igjen!"
 
-        # Koble til SMTP
-        print(f"Kobler til {smtp_server}...")
-        server = smtplib.SMTP(smtp_server, smtp_port)
-        server.starttls()
-        server.login(username, password)
-        print("Innlogget!")
+print(f"Kobler til {smtp_server}...")
+server = smtplib.SMTP(smtp_server, smtp_port)
+server.starttls()
+server.login(username, password)
+print("Innlogget!")
 
-        for report in reports:
-            try:
-                email = report['email']
-                name = report['name']
-                report_file = report['report_file']
-                
-                print(f"Sender til {name} ({email})...")
-                print(f"  Rapport: {report_file}")
-                
-                # Les HTML-rapport
-                with open(report_file, 'r', encoding='utf-8') as f:
-                    html_content = f.read()
-                
-                # Lag e-post
-                msg = MIMEMultipart('alternative')
-                msg['Subject'] = subject
-                msg['From'] = f"FPL Analyzer Bot <{username}>"
-                msg['To'] = email
-                
-                # HTML innhold
-                html_part = MIMEText(html_content, 'html')
-                msg.attach(html_part)
-                
-                # Send
-                server.sendmail(username, email, msg.as_string())
-                print(f"  ✓ Sendt!")
-                
-            except Exception as e:
-                print(f"  ✗ Feil: {e}")
+for report in reports:
+    try:
+        email = report['email']
+        name = report['name']
+        report_file = report['report_file']
+        
+        print(f"Sender til {name} ({email})...")
+        
+        with open(report_file, 'r', encoding='utf-8') as f:
+            html_content = f.read()
+        
+        msg = MIMEMultipart('alternative')
+        msg['Subject'] = subject
+        msg['From'] = f"FPL Analyzer Bot <{username}>"
+        msg['To'] = email
+        
+        html_part = MIMEText(html_content, 'html')
+        msg.attach(html_part)
+        
+        server.sendmail(username, email, msg.as_string())
+        print(f"  ✓ Sendt!")
+        
+    except Exception as e:
+        print(f"  ✗ Feil: {e}")
 
-        server.quit()
-        print(f"\nFerdig! Sendt til {len(reports)} mottakere.")
-        EMAILSCRIPT
+server.quit()
+print(f"\nFerdig!")
+EOF
     
     - name: Upload reports as artifact
       if: steps.set_flag.outputs.send_email == 'true'
@@ -220,6 +274,7 @@ jobs:
           reports/
           console_output.txt
           generated_reports.json
+          subscribers.json
         retention-days: 30
     
     - name: Skip notification
