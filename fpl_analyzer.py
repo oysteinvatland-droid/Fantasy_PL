@@ -2460,6 +2460,71 @@ class FPLAnalyzer:
             pass
         return ""
     
+    def _get_combined_greeting_deadline_html(self, subscriber_name):
+        """Genererer kombinert greeting og deadline boks"""
+        if self.data is None:
+            return ""
+        
+        try:
+            events = self.data.get('events', [])
+            neste_gw = None
+            
+            for event in events:
+                if not event.get('finished', True):
+                    neste_gw = event
+                    break
+            
+            if neste_gw is None:
+                # Returner bare greeting uten deadline
+                return f'''
+                <div class="combined-greeting-deadline">
+                    <div class="greeting-text">👋 Hei {subscriber_name}! Her er din personlige FPL-rapport</div>
+                </div>'''
+            
+            deadline_str = neste_gw.get('deadline_time', '')
+            if deadline_str:
+                deadline = datetime.fromisoformat(deadline_str.replace('Z', '+00:00'))
+                nå = datetime.now(deadline.tzinfo)
+                tid_igjen = deadline - nå
+                
+                if tid_igjen.total_seconds() > 0:
+                    dager = tid_igjen.days
+                    timer = tid_igjen.seconds // 3600
+                    minutter = (tid_igjen.seconds % 3600) // 60
+                    
+                    warning = ""
+                    if dager == 0 and timer < 6:
+                        warning = "⚠️ Bare noen timer igjen!"
+                    elif dager == 0:
+                        warning = "⚠️ Deadline er i dag!"
+                    elif dager == 1:
+                        warning = "📅 Deadline er i morgen!"
+                    
+                    return f'''
+                    <div class="combined-greeting-deadline">
+                        <div class="greeting-row">
+                            <div class="greeting-text">👋 Hei {subscriber_name}!</div>
+                        </div>
+                        <div class="deadline-row">
+                            <div class="deadline-info">
+                                <span class="deadline-icon">⏰</span>
+                                <div class="deadline-details">
+                                    <div class="deadline-title">Gameweek {neste_gw.get('id', '?')} Deadline</div>
+                                    <div class="deadline-time">{dager}d {timer}t {minutter}m</div>
+                                    <div class="deadline-date">{deadline.strftime('%A %d. %B %H:%M')}</div>
+                                </div>
+                            </div>
+                            {f'<div class="deadline-warning">{warning}</div>' if warning else ''}
+                        </div>
+                    </div>'''
+        except:
+            pass
+        
+        return f'''
+        <div class="combined-greeting-deadline">
+            <div class="greeting-text">👋 Hei {subscriber_name}! Her er din personlige FPL-rapport</div>
+        </div>'''
+    
     def _get_drommelag_html(self):
         """Genererer HTML for drømmelaget"""
         try:
@@ -2704,10 +2769,12 @@ class FPLAnalyzer:
             spisser_df = self.beregn_avansert_spiss_score()
             midtbane_df = self.beregn_avansert_midtbane_score()
             forsvar_df = self.beregn_avansert_forsvar_score()
+            keeper_df = self.beregn_avansert_keeper_score()
             
             spisser_df = spisser_df.sort_values(by='total_vektet_spiss_vurdering', ascending=False).reset_index(drop=True)
             midtbane_df = midtbane_df.sort_values(by='total_vektet_midtbane_vurdering', ascending=False).reset_index(drop=True)
             forsvar_df = forsvar_df.sort_values(by='xPts_adjusted', ascending=False).reset_index(drop=True)
+            keeper_df = keeper_df.sort_values(by='xPts_adjusted', ascending=False).reset_index(drop=True)
             
             def get_rank(df, player_id, score_col):
                 player_row = df[df['id'] == player_id]
@@ -2747,6 +2814,9 @@ class FPLAnalyzer:
                 elif pos_type == 'DEF':
                     rank, score = get_rank(forsvar_df, player_id, 'xPts_adjusted')
                     total_in_pos = len(forsvar_df)
+                elif pos_type == 'GKP':
+                    rank, score = get_rank(keeper_df, player_id, 'xPts_adjusted')
+                    total_in_pos = len(keeper_df)
                 else:
                     rank, score = None, None
                     total_in_pos = 0
@@ -2757,22 +2827,17 @@ class FPLAnalyzer:
                     all_ranks.append(rank)
                     if rank <= 3:
                         rank_class = "rank-gold"
-                        rank_emoji = "🥇"
                     elif rank <= 10:
                         rank_class = "rank-silver"
-                        rank_emoji = "🥈"
                     elif rank <= 25:
                         rank_class = "rank-bronze"
-                        rank_emoji = "🥉"
                     else:
                         rank_class = "rank-normal"
-                        rank_emoji = ""
-                    rank_text = f"#{rank}/{total_in_pos}"
-                    score_text = f"{score:.1f}"
+                    rank_text = f"#{rank}"
+                    score_text = f"{score:.2f}"
                 else:
                     rank_class = "rank-na"
-                    rank_emoji = ""
-                    rank_text = "N/A"
+                    rank_text = "-"
                     score_text = "-"
                 
                 row_html = f'''
@@ -2781,8 +2846,8 @@ class FPLAnalyzer:
                     <td class="player-name">{name}{captain_mark}</td>
                     <td><span class="team-badge">{team}</span></td>
                     <td class="price">£{price:.1f}m</td>
-                    <td><span class="{rank_class}">{rank_emoji} {rank_text}</span></td>
-                    <td>{score_text}</td>
+                    <td><span class="{rank_class}">{rank_text}</span></td>
+                    <td class="xpts-value">{score_text}</td>
                 </tr>'''
                 
                 if position <= 11:
@@ -2796,174 +2861,213 @@ class FPLAnalyzer:
             top_25 = sum(1 for r in all_ranks if r <= 25)
             
             html = f'''
-        <div class="section my-team-section">
-            <div class="my-team-header">
-                <span class="my-team-icon">⚽</span>
-                <div class="my-team-title">Your Team: {team_name}</div>
-            </div>
-            <div class="my-team-subtitle">Ranked against our analysis • Gameweek {current_gw}</div>
-            
-            <div class="team-stats">
-                <div class="stat-card">
-                    <div class="stat-icon">📊</div>
-                    <div class="stat-content">
-                        <div class="stat-value">#{avg_rank:.0f}</div>
-                        <div class="stat-label">Average Rank</div>
-                    </div>
+        <div class="my-team-container">
+            <div class="my-team-header-row">
+                <div class="team-info">
+                    <div class="team-name">⚽ {team_name}</div>
+                    <div class="team-subtitle">Rangert mot vår AI-analyse • Gameweek {current_gw}</div>
                 </div>
-                <div class="stat-card">
-                    <div class="stat-icon">🥇</div>
-                    <div class="stat-content">
-                        <div class="stat-value">{top_10}</div>
-                        <div class="stat-label">Players in Top 10</div>
+                <div class="team-stats-row">
+                    <div class="stat-box">
+                        <div class="stat-number">#{avg_rank:.0f}</div>
+                        <div class="stat-text">Snittrangering</div>
                     </div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon">🏆</div>
-                    <div class="stat-content">
-                        <div class="stat-value">{top_25}</div>
-                        <div class="stat-label">Players in Top 25</div>
+                    <div class="stat-box">
+                        <div class="stat-number">{top_10}</div>
+                        <div class="stat-text">Topp 10</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-number">{top_25}</div>
+                        <div class="stat-text">Topp 25</div>
                     </div>
                 </div>
             </div>
             
-            <h4 style="margin: 20px 0 10px 0; color: #00ff87;">⚽ Starting XI</h4>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Pos</th>
-                        <th>Player</th>
-                        <th>Team</th>
-                        <th>Price</th>
-                        <th>Rank</th>
-                        <th>Score</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {startere_html}
-                </tbody>
-            </table>
-            
-            <h4 style="margin: 20px 0 10px 0; color: #888;">🪑 Bench</h4>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Pos</th>
-                        <th>Player</th>
-                        <th>Team</th>
-                        <th>Price</th>
-                        <th>Rank</th>
-                        <th>Score</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {benk_html}
-                </tbody>
-            </table>
+            <div class="my-team-tables">
+                <div class="team-table-section">
+                    <div class="table-title">⚽ Startoppstilling</div>
+                    <table class="my-team-table">
+                        <thead>
+                            <tr>
+                                <th>Pos</th>
+                                <th>Spiller</th>
+                                <th>Lag</th>
+                                <th>Pris</th>
+                                <th>Rank</th>
+                                <th>xPts</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {startere_html}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="team-table-section bench-section">
+                    <div class="table-title bench-title">🪑 Benk</div>
+                    <table class="my-team-table">
+                        <thead>
+                            <tr>
+                                <th>Pos</th>
+                                <th>Spiller</th>
+                                <th>Lag</th>
+                                <th>Pris</th>
+                                <th>Rank</th>
+                                <th>xPts</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {benk_html}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
         
         <style>
-            .my-team-section {{
-                background: linear-gradient(135deg, #ffffff 0%, #f0f4f8 100%);
-                border: none;
+            .my-team-container {{
+                background: #d4edda;
                 border-radius: 20px;
-                box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+                padding: 25px;
+                margin-bottom: 25px;
+                color: #000;
             }}
-            .my-team-header {{
+            .my-team-header-row {{
                 display: flex;
+                justify-content: space-between;
                 align-items: center;
-                gap: 15px;
+                flex-wrap: wrap;
+                gap: 20px;
+                margin-bottom: 25px;
+                padding-bottom: 20px;
+                border-bottom: 2px solid rgba(0,0,0,0.1);
+            }}
+            .team-info {{
+                flex: 1;
+                min-width: 250px;
+            }}
+            .team-name {{
+                font-size: 1.8em;
+                font-weight: bold;
+                color: #1a5928;
                 margin-bottom: 5px;
             }}
-            .my-team-icon {{
-                font-size: 2.5em;
+            .team-subtitle {{
+                font-size: 0.95em;
+                color: #2d6a3d;
             }}
-            .my-team-title {{
-                font-size: 2em;
-                font-weight: bold;
-                color: #1a3a5c;
-            }}
-            .my-team-subtitle {{
-                color: #666;
-                font-size: 1em;
-                margin-bottom: 25px;
-                padding-left: 60px;
-            }}
-            .team-stats {{
+            .team-stats-row {{
                 display: flex;
-                justify-content: center;
-                gap: 20px;
-                margin: 25px 0;
-                flex-wrap: wrap;
-            }}
-            .stat-card {{
-                display: flex;
-                align-items: center;
                 gap: 15px;
-                background: linear-gradient(135deg, #1a3a5c 0%, #2d5a87 100%);
-                padding: 20px 30px;
-                border-radius: 15px;
-                box-shadow: 0 5px 20px rgba(26, 58, 92, 0.3);
-                min-width: 200px;
             }}
-            .stat-icon {{
-                font-size: 2em;
+            .stat-box {{
+                background: #1a5928;
+                padding: 15px 25px;
+                border-radius: 12px;
+                text-align: center;
+                min-width: 100px;
             }}
-            .stat-content {{
-                text-align: left;
-            }}
-            .stat-value {{
-                font-size: 2em;
+            .stat-number {{
+                font-size: 1.8em;
                 font-weight: bold;
-                color: #00ff87;
+                color: #90EE90;
             }}
-            .stat-label {{
-                font-size: 0.85em;
-                color: #a0c4e8;
+            .stat-text {{
+                font-size: 0.8em;
+                color: #c8e6c9;
                 text-transform: uppercase;
                 letter-spacing: 0.5px;
             }}
-            .my-team-section table {{
-                background: white;
-                border-radius: 10px;
-                overflow: hidden;
+            .my-team-tables {{
+                display: flex;
+                flex-direction: column;
+                gap: 20px;
             }}
-            .my-team-section th {{
-                background: #1a3a5c !important;
-                color: white !important;
+            .team-table-section {{
+                background: #fff;
+                border-radius: 12px;
+                padding: 15px;
             }}
-            .my-team-section td {{
-                color: #333;
+            .bench-section {{
+                background: #f5f5f5;
+            }}
+            .table-title {{
+                font-size: 1.1em;
+                font-weight: bold;
+                color: #1a5928;
+                margin-bottom: 12px;
+                padding-left: 5px;
+            }}
+            .bench-title {{
+                color: #666 !important;
+            }}
+            .my-team-table {{
+                width: 100%;
+                border-collapse: collapse;
+                font-size: 0.9em;
+            }}
+            .my-team-table th {{
+                background: #1a5928;
+                color: white;
+                padding: 10px 8px;
+                text-align: left;
+                font-weight: 600;
+            }}
+            .bench-section .my-team-table th {{
+                background: #666;
+            }}
+            .my-team-table td {{
+                padding: 10px 8px;
                 border-bottom: 1px solid #e0e0e0;
+                color: #333;
             }}
-            .my-team-section tr:hover {{
-                background: #f5f9fc;
+            .my-team-table tr:hover {{
+                background: #f0fff0;
             }}
-            .my-team-section h4 {{
-                color: #1a3a5c !important;
-                font-size: 1.2em;
+            .bench-section .my-team-table tr:hover {{
+                background: #eee;
             }}
-            .pos-badge {{
+            .my-team-table .player-name {{
+                font-weight: 600;
+                color: #000;
+            }}
+            .my-team-table .price {{
+                color: #1a5928;
+                font-weight: 600;
+            }}
+            .my-team-table .xpts-value {{
+                font-weight: bold;
+                color: #1a5928;
+            }}
+            .my-team-table .pos-badge {{
                 padding: 3px 8px;
                 border-radius: 5px;
-                font-size: 0.85em;
+                font-size: 0.8em;
                 font-weight: bold;
             }}
-            .pos-gkp {{ background: #ffcc00; color: #000; }}
-            .pos-def {{ background: #00ff87; color: #000; }}
-            .pos-mid {{ background: #00bfff; color: #000; }}
-            .pos-fwd {{ background: #ff6b6b; color: #000; }}
-            .rank-gold {{ color: #ffd700; font-weight: bold; text-shadow: 1px 1px 2px rgba(0,0,0,0.3); }}
-            .rank-silver {{ color: #888; font-weight: bold; }}
-            .rank-bronze {{ color: #cd7f32; font-weight: bold; }}
-            .rank-normal {{ color: #666; }}
-            .rank-na {{ color: #999; }}
-        </style>'''
+            .my-team-table .pos-gkp {{ background: #ffcc00; color: #000; }}
+            .my-team-table .pos-def {{ background: #00ff87; color: #000; }}
+            .my-team-table .pos-mid {{ background: #00bfff; color: #000; }}
+            .my-team-table .pos-fwd {{ background: #ff6b6b; color: #fff; }}
+            .my-team-table .team-badge {{
+                background: #e8e8e8;
+                padding: 2px 6px;
+                border-radius: 4px;
+                font-size: 0.85em;
+            }}
+            .my-team-table .rank-gold {{ color: #b8860b; font-weight: bold; }}
+            .my-team-table .rank-silver {{ color: #666; font-weight: bold; }}
+            .my-team-table .rank-bronze {{ color: #cd7f32; font-weight: bold; }}
+            .my-team-table .rank-normal {{ color: #888; }}
+            .my-team-table .rank-na {{ color: #ccc; }}
+        </style>
+        '''
             
             return html
             
         except Exception as e:
-            return f"<!-- Error loading team: {e} -->"
+            print(f"Feil ved henting av mitt lag: {e}")
+            return ""
     
     def _df_to_html_table(self, df, position_type):
         """Konverterer en DataFrame til en stylet HTML-tabell"""
@@ -3040,8 +3144,8 @@ class FPLAnalyzer:
         # Hent drømmelag HTML
         drommelag_html = self._get_drommelag_html()
         
-        # Hent deadline info
-        deadline_html = self._get_deadline_html()
+        # Hent kombinert greeting og deadline
+        combined_greeting_html = self._get_combined_greeting_deadline_html(subscriber_name)
         
         html = f'''<!DOCTYPE html>
 <html lang="no">
@@ -3057,7 +3161,7 @@ class FPLAnalyzer:
         }}
         body {{
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            background: #1a1a2e;
             min-height: 100vh;
             padding: 20px;
             color: #ffffff;
@@ -3082,6 +3186,62 @@ class FPLAnalyzer:
         .header .subtitle {{
             font-size: 1.2em;
             opacity: 0.9;
+        }}
+        .combined-greeting-deadline {{
+            background: #d4edda;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+            color: #000;
+        }}
+        .greeting-row {{
+            margin-bottom: 15px;
+        }}
+        .greeting-text {{
+            font-size: 1.4em;
+            font-weight: bold;
+            color: #1a5928;
+        }}
+        .deadline-row {{
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            padding-top: 15px;
+            border-top: 2px solid rgba(0,0,0,0.1);
+        }}
+        .deadline-info {{
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }}
+        .deadline-icon {{
+            font-size: 2.5em;
+        }}
+        .deadline-details {{
+            flex: 1;
+        }}
+        .deadline-title {{
+            font-size: 1.1em;
+            font-weight: bold;
+            color: #1a5928;
+        }}
+        .deadline-time {{
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #c0392b;
+        }}
+        .deadline-date {{
+            font-size: 0.95em;
+            color: #2d6a3d;
+        }}
+        .deadline-warning {{
+            background: #f8d7da;
+            color: #721c24;
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-weight: bold;
         }}
         .personal-greeting {{
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -3233,11 +3393,7 @@ class FPLAnalyzer:
             <div class="subtitle">Ukentlig Spilleranalyse & Anbefalinger</div>
         </div>
         
-        <div class="personal-greeting">
-            👋 Hei {subscriber_name}! Her er din personlige FPL-rapport
-        </div>
-        
-        {deadline_html}
+        {combined_greeting_html}
         
         <div class="section">
             <div class="section-header">
