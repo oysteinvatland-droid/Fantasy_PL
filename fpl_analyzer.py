@@ -2187,19 +2187,20 @@ class FPLAnalyzer:
         .header {{
             text-align: center;
             padding: 40px 20px;
-            background: linear-gradient(135deg, #37003c 0%, #00ff87 100%);
+            background: linear-gradient(135deg, #a8d4f0 0%, #d0e8f7 100%);
             border-radius: 20px;
             margin-bottom: 30px;
-            box-shadow: 0 10px 40px rgba(0, 255, 135, 0.3);
+            box-shadow: 0 10px 40px rgba(0, 100, 200, 0.2);
         }}
         .header h1 {{
             font-size: 2.5em;
             margin-bottom: 10px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            color: #1a365d;
+            text-shadow: none;
         }}
         .header .subtitle {{
             font-size: 1.2em;
-            opacity: 0.9;
+            color: #2c5282;
         }}
         .deadline-box {{
             background: linear-gradient(135deg, #ff6b6b 0%, #feca57 100%);
@@ -3173,19 +3174,20 @@ class FPLAnalyzer:
         .header {{
             text-align: center;
             padding: 40px 20px;
-            background: linear-gradient(135deg, #37003c 0%, #00ff87 100%);
+            background: linear-gradient(135deg, #a8d4f0 0%, #d0e8f7 100%);
             border-radius: 20px;
             margin-bottom: 30px;
-            box-shadow: 0 10px 40px rgba(0, 255, 135, 0.3);
+            box-shadow: 0 10px 40px rgba(0, 100, 200, 0.2);
         }}
         .header h1 {{
             font-size: 2.5em;
             margin-bottom: 10px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            color: #1a365d;
+            text-shadow: none;
         }}
         .header .subtitle {{
             font-size: 1.2em;
-            opacity: 0.9;
+            color: #2c5282;
         }}
         .combined-greeting-deadline {{
             background: #d4edda;

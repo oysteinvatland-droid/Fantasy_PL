@@ -15,6 +15,9 @@ response = requests.get(SHEET_URL, timeout=30)
 print(f"Status: {response.status_code}")
 response.raise_for_status()
 
+# Sett encoding eksplisitt til UTF-8
+response.encoding = 'utf-8'
+
 print(f"CSV data mottatt ({len(response.text)} bytes)")
 print("Første 500 tegn:")
 print(response.text[:500])
