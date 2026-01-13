@@ -32,6 +32,73 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
     
+    - name: Download known subscribers from previous runs
+      continue-on-error: true
+      uses: dawidd6/action-download-artifact@v3
+      with:
+        name: known-subscribers
+        path: .
+        search_artifacts: true
+        if_no_artifact_found: warn
+    
+    - name: Fetch subscribers from Google Sheets
+      run: |
+        echo "=== Fetching subscribers ==="
+        python3 fetch_subscribers.py
+        echo "=== Subscribers ==="
+        cat subscribers.json
+        echo ""
+        echo "=== New subscribers ==="
+        cat new_subscribers.json
+    
+    - name: Check for new subscribers
+      id: check_new
+      run: |
+        HAS_NEW=$(cat has_new_subscribers.txt)
+        echo "has_new_subscribers=$HAS_NEW" >> $GITHUB_OUTPUT
+        echo "Has new subscribers: $HAS_NEW"
+    
+    - name: Generate welcome reports for new subscribers
+      if: steps.check_new.outputs.has_new_subscribers == 'true'
+      run: |
+        echo "=== Generating welcome reports ==="
+        python3 -c "
+        import json
+        
+        # Les nye abonnenter
+        with open('new_subscribers.json', 'r') as f:
+            new_subs = json.load(f)
+        
+        if not new_subs:
+            print('Ingen nye abonnenter')
+            exit(0)
+        
+        # Lag midlertidig subscribers fil for generering
+        with open('temp_new_subscribers.json', 'w') as f:
+            json.dump(new_subs, f, indent=2)
+        
+        print(f'Genererer rapport for {len(new_subs)} nye abonnenter')
+        "
+        
+        # Generer rapporter for nye abonnenter
+        python fpl_analyzer.py --subscribers new_subscribers.json 2>&1 | tee welcome_console.txt
+        
+        # Flytt generated_reports.json til welcome_reports.json
+        if [ -f "generated_reports.json" ]; then
+          mv generated_reports.json welcome_reports.json
+          echo "Welcome reports generated:"
+          cat welcome_reports.json
+        fi
+    
+    - name: Send welcome emails to new subscribers
+      if: steps.check_new.outputs.has_new_subscribers == 'true'
+      env:
+        EMAIL_USERNAME: ${{ secrets.EMAIL_USERNAME }}
+        EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+      run: |
+        echo "=== Sending welcome emails ==="
+        python3 send_emails.py --welcome
+    
     - name: Check deadline
       id: deadline_check
       env:
@@ -66,7 +133,7 @@ jobs:
             print(f'Force send: {force_send}')
             
             if force_send:
-                print('FORCE SEND AKTIVERT - sender e-post uansett!')
+                print('FORCE SEND AKTIVERT!')
                 open('send_email.txt', 'w').write('true')
                 open('gw_number.txt', 'w').write(str(gw_number))
                 open('hours_until.txt', 'w').write(f'{hours_until:.0f}')
@@ -76,7 +143,7 @@ jobs:
                 open('gw_number.txt', 'w').write(str(gw_number))
                 open('hours_until.txt', 'w').write(f'{hours_until:.0f}')
             else:
-                print(f'Mer enn 24 timer til deadline - sender ikke mail')
+                print(f'Mer enn 24 timer til deadline - sender ikke ukentlig mail')
                 open('send_email.txt', 'w').write('false')
         else:
             print('Ingen kommende gameweek funnet')
@@ -88,7 +155,7 @@ jobs:
       run: |
         SEND_EMAIL=$(cat send_email.txt)
         echo "send_email=$SEND_EMAIL" >> $GITHUB_OUTPUT
-        echo "Send email: $SEND_EMAIL"
+        echo "Send weekly email: $SEND_EMAIL"
         
         if [ "$SEND_EMAIL" = "true" ]; then
           GW_NUMBER=$(cat gw_number.txt)
@@ -97,35 +164,13 @@ jobs:
           echo "hours_until=$HOURS_UNTIL" >> $GITHUB_OUTPUT
         fi
     
-    - name: Fetch subscribers from Google Sheets
-      if: steps.set_flag.outputs.send_email == 'true'
-      run: |
-        echo "=== Fetching subscribers from Google Sheets ==="
-        python3 fetch_subscribers.py
-        echo "=== Fetch complete ==="
-        cat subscribers.json
-    
     - name: Run FPL analysis for all subscribers
       if: steps.set_flag.outputs.send_email == 'true'
       run: |
-        echo "=== Starting FPL Analysis ==="
+        echo "=== Generating weekly reports ==="
         python fpl_analyzer.py --subscribers subscribers.json 2>&1 | tee console_output.txt
-        echo "=== Script finished ==="
     
-    - name: Check generated reports
-      if: steps.set_flag.outputs.send_email == 'true'
-      run: |
-        echo "Checking for generated_reports.json..."
-        if [ -f "generated_reports.json" ]; then
-          echo "File exists!"
-          cat generated_reports.json
-        else
-          echo "File not found!"
-          cat console_output.txt
-          exit 1
-        fi
-    
-    - name: Send emails to all subscribers
+    - name: Send weekly emails to all subscribers
       if: steps.set_flag.outputs.send_email == 'true'
       env:
         EMAIL_USERNAME: ${{ secrets.EMAIL_USERNAME }}
@@ -134,18 +179,27 @@ jobs:
         HOURS_UNTIL: ${{ steps.set_flag.outputs.hours_until }}
       run: python3 send_emails.py
     
+    - name: Save known subscribers for next run
+      uses: actions/upload-artifact@v4
+      with:
+        name: known-subscribers
+        path: known_subscribers.json
+        retention-days: 90
+        overwrite: true
+    
     - name: Upload reports as artifact
-      if: steps.set_flag.outputs.send_email == 'true'
+      if: always()
       uses: actions/upload-artifact@v4
       with:
         name: fpl-reports-${{ github.run_number }}
         path: |
           reports/
           console_output.txt
+          welcome_console.txt
           generated_reports.json
+          welcome_reports.json
           subscribers.json
+          new_subscribers.json
+          known_subscribers.json
         retention-days: 30
-    
-    - name: Skip notification
-      if: steps.set_flag.outputs.send_email == 'false'
-      run: echo "Skipped - more than 24 hours until deadline"
+        if-no-files-found: ignore
