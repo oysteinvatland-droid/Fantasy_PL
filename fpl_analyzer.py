@@ -750,6 +750,193 @@ class FPLAnalyzer:
         
         return resultat
     
+    def beregn_avansert_keeper_score(self):
+        """
+        Beregner forventede poeng per kamp (xPts) for keepere.
+        
+        Formel: xPts = (4×CS_prob + 0.33×Saves_per_match + MinPts + Bonus) × play_prob × fixture_mult
+        
+        FPL-poeng for keepere:
+        - Clean sheet: 4 poeng
+        - Hver 3. redning: 1 poeng (≈ 0.33 per redning)
+        - Spilletid 60+ min: 2 poeng
+        - Spilletid 1-59 min: 1 poeng
+        - Bonus: 0-3 poeng
+        """
+        df = self.beregn_metrics()
+        if df is None:
+            return None
+        
+        # Filtrer kun keepere (element_type = 1)
+        df = df[df['posisjon'] == 'GKP'].copy()
+        
+        # Filtrer først på spillere med nok minutter for å redusere API-kall
+        relevant_df = df[df['minutes'] >= 90].copy()
+        
+        # Hent spilletidsdata for siste 4 kamper (parallelt, kun relevante spillere)
+        player_ids = relevant_df['id'].tolist()
+        stats_dict = self.hent_siste_4_kamper_batch(player_ids)
+        
+        # Sett default verdier
+        df['starts_siste_4'] = 0
+        df['minutter_siste_4'] = 0
+        df['avg_minutes_siste_4'] = 0.0
+        df['ppg_siste_4'] = 0.0
+        
+        # Oppdater med hentet data
+        for idx, row in df.iterrows():
+            player_id = row['id']
+            if player_id in stats_dict:
+                stats = stats_dict[player_id]
+                df.at[idx, 'starts_siste_4'] = stats['starts_siste_4']
+                df.at[idx, 'minutter_siste_4'] = stats['minutter_siste_4']
+                df.at[idx, 'avg_minutes_siste_4'] = stats['minutter_siste_4'] / 4
+                df.at[idx, 'ppg_siste_4'] = stats.get('ppg_siste_4', 0)
+        
+        # Beregn spilletid-sannsynlighet basert på siste 4 kamper
+        df['start_rate'] = df['starts_siste_4'] / 4
+        df['minutes_rate'] = (df['minutter_siste_4'] / 4) / 90
+        df['playing_time_probability'] = df['start_rate'] * 0.80 + df['minutes_rate'] * 0.20
+        
+        # Beregn kamper spilt for laget
+        df['kamper_spilt'] = df.apply(
+            lambda x: self._get_team_games_played(x['team']),
+            axis=1
+        )
+        df['kamper_spilt'] = df['kamper_spilt'].clip(lower=1)
+        
+        # Beregn sesong PPG for form-sammenligning
+        df['ppg_sesong'] = df['total_points'] / df['kamper_spilt']
+        
+        # 1. CS probability basert på lagets xGA
+        team_xga = {}
+        for team_id in df['team'].unique():
+            team_players = self.players_df[self.players_df['team'] == team_id]
+            # Bruk keeperen eller forsvarsspilleren med mest spilletid
+            defenders = team_players[team_players['element_type'] <= 2]  # GK og DEF
+            
+            if len(defenders) > 0:
+                defenders_sorted = defenders.sort_values(by='minutes', ascending=False)
+                top_defender = defenders_sorted.iloc[0]
+                
+                gc = pd.to_numeric(top_defender['goals_conceded'], errors='coerce')
+                minutes = pd.to_numeric(top_defender['minutes'], errors='coerce')
+                
+                if pd.notna(gc) and pd.notna(minutes) and minutes > 0:
+                    games_played = minutes / 90
+                    xga_per_game = gc / games_played if games_played > 0 else 1.5
+                else:
+                    xga_per_game = 1.5
+            else:
+                xga_per_game = 1.5
+            
+            team_xga[team_id] = xga_per_game
+        
+        df['team_xga'] = df['team'].map(team_xga)
+        df['CS_prob'] = np.exp(-df['team_xga'])
+        
+        # 2. Saves per kamp
+        df['saves'] = pd.to_numeric(df['saves'], errors='coerce').fillna(0)
+        df['saves_per_match'] = df['saves'] / df['kamper_spilt']
+        
+        # 3. MinPts: Appearance points basert på siste 4 kamper
+        df['MinPts'] = df['avg_minutes_siste_4'].apply(
+            lambda x: 2.0 if x >= 60 else (1.0 if x > 0 else 0.0)
+        )
+        
+        # 4. Bonus: 0.04 * BPS90
+        df['bps_per_90'] = df.apply(
+            lambda x: (x['bps'] / x['minutes'] * 90) if x['minutes'] > 0 else 0,
+            axis=1
+        )
+        df['Bonus_per_match'] = 0.04 * df['bps_per_90']
+        
+        # BEREGN FORVENTEDE POENG PER KAMP (BASE)
+        # Keeper: 4 poeng for CS, 0.33 per save
+        df['xPts_base'] = (
+            4 * df['CS_prob'] +
+            0.33 * df['saves_per_match'] +
+            df['MinPts'] +
+            df['Bonus_per_match']
+        )
+        
+        # JUSTER FOR SPILLETID-SANNSYNLIGHET
+        df['xPts_per_match'] = df['xPts_base'] * df['playing_time_probability']
+        
+        # JUSTER FOR FORM (siste 4 kamper vs sesong)
+        df['form_ratio'] = df.apply(
+            lambda x: x['ppg_siste_4'] / x['ppg_sesong'] if x['ppg_sesong'] > 0 else 1.0,
+            axis=1
+        )
+        df['form_multiplier'] = (0.8 + df['form_ratio'] * 0.2).clip(0.8, 1.2)
+        df['xPts_with_form'] = df['xPts_per_match'] * df['form_multiplier']
+        
+        # Juster for fixture difficulty (neste 5 kamper)
+        if self.fixtures is not None:
+            team_fixture_difficulty = {}
+            for team_id in df['team'].unique():
+                fdr = self.beregn_fixture_difficulty(team_id, 5)
+                team_fixture_difficulty[team_id] = fdr if fdr else 3
+            
+            df['fixture_difficulty'] = df['team'].map(team_fixture_difficulty)
+            # For keepere: lavere FDR = høyere CS-sjanse = høyere xPts
+            df['fixture_multiplier'] = 1.2 - (df['fixture_difficulty'] - 2) * 0.1
+            df['xPts_adjusted'] = df['xPts_with_form'] * df['fixture_multiplier']
+        else:
+            df['fixture_difficulty'] = 3
+            df['xPts_adjusted'] = df['xPts_with_form']
+        
+        return df
+    
+    def beste_keepere(self, antall=15, min_minutter=180, maks_pris=None):
+        """Finner de beste keeperne basert på forventede poeng per kamp (xPts)"""
+        df = self.beregn_avansert_keeper_score()
+        
+        if df is None:
+            return None
+        
+        # Filtrer på minimum spilletid
+        df = df[df['minutes'] >= min_minutter]
+        
+        # Filtrer på pris hvis spesifisert
+        if maks_pris:
+            df = df[df['pris_mill'] <= maks_pris]
+        
+        # Velg relevante kolonner
+        kolonner = [
+            'web_name', 'lag_short', 'pris_mill', 'xPts_adjusted', 'form_multiplier',
+            'playing_time_probability', 'CS_prob', 'saves_per_match',
+            'fixture_difficulty', 'ppm', 'total_points', 'valgt_prosent'
+        ]
+        
+        # Sorter etter xPts_adjusted
+        resultat = df[kolonner].sort_values(by='xPts_adjusted', ascending=False).head(antall)
+        
+        # Rund av for bedre lesbarhet
+        resultat['xPts_adjusted'] = resultat['xPts_adjusted'].round(2)
+        resultat['form_multiplier'] = resultat['form_multiplier'].round(2)
+        resultat['playing_time_probability'] = (resultat['playing_time_probability'] * 100).round(0)
+        resultat['CS_prob'] = (resultat['CS_prob'] * 100).round(1)
+        resultat['saves_per_match'] = resultat['saves_per_match'].round(1)
+        resultat['fixture_difficulty'] = resultat['fixture_difficulty'].round(1)
+        resultat['ppm'] = resultat['ppm'].round(2)
+        resultat['valgt_prosent'] = resultat['valgt_prosent'].round(1)
+        
+        # Gi kolonnene kortere, mer lesbare navn
+        resultat = resultat.rename(columns={
+            'web_name': 'name',
+            'lag_short': 'lag',
+            'pris_mill': 'pris',
+            'xPts_adjusted': 'xPts',
+            'form_multiplier': 'form',
+            'playing_time_probability': 'play_%',
+            'CS_prob': 'CS_%',
+            'saves_per_match': 'saves',
+            'fixture_difficulty': 'fix_diff'
+        })
+        
+        return resultat
+    
     def beregn_avansert_forsvar_score(self, vekter=None):
         """
         Enkel, forklarbar forsvarsspiller-modell basert på forventede poeng per kamp:
@@ -1568,7 +1755,15 @@ class FPLAnalyzer:
         # Vis tid til neste deadline
         self._vis_deadline_countdown()
         
-        print("\n⭐ TOPP 25 SPISSER - EXPECTED POINTS (xPts)")
+        print("\n🧤 TOPP 15 KEEPERE - EXPECTED POINTS (xPts)")
+        print("-"*100)
+        print("xPts modell: 4*CS + 0.33*Saves + MinPts + Bonus (justert for fixtures og spilletid)")
+        print("-"*100)
+        keepere = self.beste_keepere(antall=15, min_minutter=180)
+        if keepere is not None:
+            print(keepere.to_string(index=False))
+        
+        print("\n\n⭐ TOPP 25 SPISSER - EXPECTED POINTS (xPts)")
         print("-"*100)
         print("xPts modell: 4*xG + 3*xA + MinPts + Bonus (justert for fixtures og spilletid)")
         print("-"*100)
@@ -1952,6 +2147,7 @@ class FPLAnalyzer:
         """Genererer en pen HTML-rapport med styling og ikoner"""
         
         # Hent data
+        keepere = self.beste_keepere(antall=15, min_minutter=180)
         spisser = self.beste_spisser_avansert(antall=25, min_minutter=180)
         midtbane = self.beste_midtbanespillere(antall=25, min_minutter=180)
         forsvar = self.beste_forsvarsspillere(antall=25, min_minutter=180)
@@ -2152,6 +2348,17 @@ class FPLAnalyzer:
         </div>
         
         {deadline_html}
+        
+        <div class="section">
+            <div class="section-header">
+                <span class="section-icon">🧤</span>
+                <div>
+                    <div class="section-title">Top 15 Goalkeepers - Expected Points (xPts)</div>
+                    <div class="section-desc">xPts Model: 4×CS + 0.33×Saves + MinPts + Bonus (adjusted for fixtures & playing time)</div>
+                </div>
+            </div>
+            {self._df_to_html_table(keepere, 'GKP')}
+        </div>
         
         <div class="section">
             <div class="section-header">
@@ -2822,6 +3029,7 @@ class FPLAnalyzer:
         """Genererer en personlig HTML-rapport for en abonnent"""
         
         # Hent data
+        keepere = self.beste_keepere(antall=15, min_minutter=180)
         spisser = self.beste_spisser_avansert(antall=25, min_minutter=180)
         midtbane = self.beste_midtbanespillere(antall=25, min_minutter=180)
         forsvar = self.beste_forsvarsspillere(antall=25, min_minutter=180)
@@ -3030,6 +3238,17 @@ class FPLAnalyzer:
         </div>
         
         {deadline_html}
+        
+        <div class="section">
+            <div class="section-header">
+                <span class="section-icon">🧤</span>
+                <div>
+                    <div class="section-title">Top 15 Goalkeepers - Expected Points (xPts)</div>
+                    <div class="section-desc">xPts Model: 4×CS + 0.33×Saves + MinPts + Bonus (adjusted for fixtures & playing time)</div>
+                </div>
+            </div>
+            {self._df_to_html_table(keepere, 'GKP')}
+        </div>
         
         <div class="section">
             <div class="section-header">
