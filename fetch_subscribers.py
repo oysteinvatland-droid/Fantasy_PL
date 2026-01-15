@@ -1,83 +1,94 @@
 #!/usr/bin/env python3
-"""Henter abonnenter fra Google Sheets og identifiserer nye abonnenter"""
+"""Henter abonnenter fra Firebase Firestore og identifiserer nye abonnenter"""
 
-import csv
 import json
 import requests
 import os
-from io import StringIO
 
-SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSoJcowM4KinERx4akJDe2HM1cgtvbXPRgcTXMdbWt0FY2OXEJ5K9vGvpuQh5FwtZauSDAcmfEfzKYh/pub?output=csv"
-KNOWN_SUBSCRIBERS_FILE = "known_subscribers.json"
+# Firebase Firestore REST API
+PROJECT_ID = "fpl-ai-analyzer"
+FIRESTORE_URL = f"https://firestore.googleapis.com/v1/projects/{PROJECT_ID}/databases/(default)/documents/subscribers"
 
-print(f"Henter fra: {SHEET_URL}")
-response = requests.get(SHEET_URL, timeout=30)
-print(f"Status: {response.status_code}")
-response.raise_for_status()
+print(f"Henter abonnenter fra Firebase Firestore...")
+print(f"URL: {FIRESTORE_URL}")
 
-# Sett encoding eksplisitt til UTF-8
-response.encoding = 'utf-8'
+try:
+    response = requests.get(FIRESTORE_URL, timeout=30)
+    print(f"Status: {response.status_code}")
+    
+    if response.status_code != 200:
+        print(f"Feil ved henting: {response.text}")
+        # Lag tom liste hvis ingen data
+        with open('subscribers.json', 'w') as f:
+            json.dump([], f)
+        with open('new_subscribers.json', 'w') as f:
+            json.dump([], f)
+        with open('has_new_subscribers.txt', 'w') as f:
+            f.write('false')
+        exit(0)
+    
+    data = response.json()
+    
+except Exception as e:
+    print(f"Feil ved API-kall: {e}")
+    with open('subscribers.json', 'w') as f:
+        json.dump([], f)
+    with open('new_subscribers.json', 'w') as f:
+        json.dump([], f)
+    with open('has_new_subscribers.txt', 'w') as f:
+        f.write('false')
+    exit(0)
 
-print(f"CSV data mottatt ({len(response.text)} bytes)")
-print("Første 500 tegn:")
-print(response.text[:500])
-print("---")
-
-# Parse CSV
-csv_data = StringIO(response.text)
-reader = csv.DictReader(csv_data)
-
-# Vis kolonnenavn
-rows = list(reader)
-if rows:
-    print(f"Kolonner funnet: {list(rows[0].keys())}")
-
-# Last inn kjente abonnenter (de som allerede har fått rapport)
-known_subscribers = set()
-if os.path.exists(KNOWN_SUBSCRIBERS_FILE):
-    try:
-        with open(KNOWN_SUBSCRIBERS_FILE, 'r') as f:
-            known_subscribers = set(json.load(f))
-        print(f"Lastet {len(known_subscribers)} kjente abonnenter")
-    except:
-        print("Kunne ikke laste kjente abonnenter, starter på nytt")
-
+# Parse Firestore response
 subscribers = []
 new_subscribers = []
 
-for row in rows:
-    print(f"Rad: {row}")
+documents = data.get('documents', [])
+print(f"Fant {len(documents)} dokumenter i Firestore")
+
+for doc in documents:
+    fields = doc.get('fields', {})
     
-    # Google Forms kolonner - prøv flere varianter
-    name = (row.get('Navn') or row.get('Name') or row.get('navn') or '').strip()
-    email = (row.get('E-post') or row.get('Email') or row.get('E-mail') or row.get('e-post') or '').strip()
-    team_id_str = (row.get('FPL Team ID') or row.get('Team ID') or row.get('Lag-id') or row.get('team_id') or row.get('Lag-ID') or '').strip()
+    # Extract document ID for later update
+    doc_path = doc.get('name', '')
+    doc_id = doc_path.split('/')[-1] if doc_path else None
     
-    print(f"  Parsed: name={name}, email={email}, team_id_str={team_id_str}")
+    # Parse fields (Firestore returns typed values)
+    name = fields.get('name', {}).get('stringValue', '')
+    email = fields.get('email', {}).get('stringValue', '')
     
-    try:
-        team_id = int(team_id_str)
-    except (ValueError, TypeError):
-        print(f"  Ugyldig team_id: {team_id_str}")
-        continue
+    # team_id kan være integerValue eller stringValue
+    team_id_field = fields.get('team_id', {})
+    if 'integerValue' in team_id_field:
+        team_id = int(team_id_field['integerValue'])
+    elif 'stringValue' in team_id_field:
+        try:
+            team_id = int(team_id_field['stringValue'])
+        except:
+            team_id = 0
+    else:
+        team_id = 0
     
-    if name and email and team_id:
+    welcome_sent = fields.get('welcome_sent', {}).get('booleanValue', False)
+    
+    print(f"  Abonnent: {name} ({email}) - Team ID: {team_id} - Welcome sent: {welcome_sent}")
+    
+    if name and email and team_id > 0:
         subscriber = {
             'name': name,
             'email': email,
-            'team_id': team_id
+            'team_id': team_id,
+            'doc_id': doc_id
         }
         subscribers.append(subscriber)
         
-        # Sjekk om dette er en ny abonnent (basert på e-post)
-        if email.lower() not in known_subscribers:
+        # Sjekk om velkomst-e-post ikke er sendt enda
+        if not welcome_sent:
             new_subscribers.append(subscriber)
-            print(f"  ✨ NY ABONNENT!")
-        else:
-            print(f"  ✓ Kjent abonnent")
+            print(f"    ✨ NY ABONNENT (velkomst ikke sendt)")
 
-print(f"\nTotalt {len(subscribers)} abonnenter funnet")
-print(f"Nye abonnenter: {len(new_subscribers)}")
+print(f"\nTotalt {len(subscribers)} abonnenter")
+print(f"Nye abonnenter (venter på velkomst): {len(new_subscribers)}")
 
 # Lagre alle abonnenter
 with open('subscribers.json', 'w', encoding='utf-8') as f:
@@ -89,7 +100,7 @@ with open('new_subscribers.json', 'w', encoding='utf-8') as f:
     json.dump(new_subscribers, f, indent=2, ensure_ascii=False)
 print("Lagret new_subscribers.json")
 
-# Skriv ut om vi har nye abonnenter (for workflow)
+# Skriv ut om vi har nye abonnenter
 if new_subscribers:
     print("HAS_NEW_SUBSCRIBERS=true")
     with open('has_new_subscribers.txt', 'w') as f:
