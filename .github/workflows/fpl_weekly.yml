@@ -2,7 +2,7 @@ name: FPL Weekly Report
 
 on:
   schedule:
-    - cron: '0 19 * * *'
+    - cron: '0 * * * *'  # Kjører hver time
   workflow_dispatch:
     inputs:
       force_send:
@@ -32,23 +32,14 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
     
-    - name: Download known subscribers from previous runs
-      continue-on-error: true
-      uses: dawidd6/action-download-artifact@v3
-      with:
-        name: known-subscribers
-        path: .
-        search_artifacts: true
-        if_no_artifact_found: warn
-    
-    - name: Fetch subscribers from Google Sheets
+    - name: Fetch subscribers from Firebase
       run: |
-        echo "=== Fetching subscribers ==="
+        echo "=== Fetching subscribers from Firebase ==="
         python3 fetch_subscribers.py
-        echo "=== Subscribers ==="
+        echo "=== All subscribers ==="
         cat subscribers.json
         echo ""
-        echo "=== New subscribers ==="
+        echo "=== New subscribers (pending welcome) ==="
         cat new_subscribers.json
     
     - name: Check for new subscribers
@@ -62,25 +53,6 @@ jobs:
       if: steps.check_new.outputs.has_new_subscribers == 'true'
       run: |
         echo "=== Generating welcome reports ==="
-        python3 -c "
-        import json
-        
-        # Les nye abonnenter
-        with open('new_subscribers.json', 'r') as f:
-            new_subs = json.load(f)
-        
-        if not new_subs:
-            print('Ingen nye abonnenter')
-            exit(0)
-        
-        # Lag midlertidig subscribers fil for generering
-        with open('temp_new_subscribers.json', 'w') as f:
-            json.dump(new_subs, f, indent=2)
-        
-        print(f'Genererer rapport for {len(new_subs)} nye abonnenter')
-        "
-        
-        # Generer rapporter for nye abonnenter
         python fpl_analyzer.py --subscribers new_subscribers.json 2>&1 | tee welcome_console.txt
         
         # Flytt generated_reports.json til welcome_reports.json
@@ -98,6 +70,12 @@ jobs:
       run: |
         echo "=== Sending welcome emails ==="
         python3 send_emails.py --welcome
+    
+    - name: Mark welcome sent in Firebase
+      if: steps.check_new.outputs.has_new_subscribers == 'true'
+      run: |
+        echo "=== Updating Firebase ==="
+        python3 mark_welcome_sent.py
     
     - name: Check deadline
       id: deadline_check
@@ -179,14 +157,6 @@ jobs:
         HOURS_UNTIL: ${{ steps.set_flag.outputs.hours_until }}
       run: python3 send_emails.py
     
-    - name: Save known subscribers for next run
-      uses: actions/upload-artifact@v4
-      with:
-        name: known-subscribers
-        path: known_subscribers.json
-        retention-days: 90
-        overwrite: true
-    
     - name: Upload reports as artifact
       if: always()
       uses: actions/upload-artifact@v4
@@ -200,6 +170,5 @@ jobs:
           welcome_reports.json
           subscribers.json
           new_subscribers.json
-          known_subscribers.json
         retention-days: 30
         if-no-files-found: ignore
