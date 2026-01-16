@@ -2478,9 +2478,13 @@ class FPLAnalyzer:
             if neste_gw is None:
                 # Returner bare greeting uten deadline
                 return f'''
-                <div class="combined-greeting-deadline">
-                    <div class="greeting-text">👋 Hei {subscriber_name}! Her er din personlige FPL-rapport</div>
-                </div>'''
+                <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #d4edda; border-radius: 15px; margin-bottom: 30px;">
+                    <tr>
+                        <td style="padding: 25px;">
+                            <div style="font-size: 1.4em; font-weight: bold; color: #1a5928;">👋 Hei {subscriber_name}! Her er din personlige FPL-rapport</div>
+                        </td>
+                    </tr>
+                </table>'''
             
             deadline_str = neste_gw.get('deadline_time', '')
             if deadline_str:
@@ -2498,38 +2502,53 @@ class FPLAnalyzer:
                     today_date = nå.date()
                     tomorrow_date = (nå + timedelta(days=1)).date()
                     
-                    warning = ""
+                    warning_html = ""
                     if dager == 0 and timer < 6:
-                        warning = "⚠️ Bare noen timer igjen!"
+                        warning_html = '<td style="vertical-align: middle;"><div style="background-color: #f8d7da; color: #721c24; padding: 10px 20px; border-radius: 10px; font-weight: bold;">⚠️ Bare noen timer igjen!</div></td>'
                     elif deadline_date == today_date:
-                        warning = "⚠️ Deadline er i dag!"
+                        warning_html = '<td style="vertical-align: middle;"><div style="background-color: #f8d7da; color: #721c24; padding: 10px 20px; border-radius: 10px; font-weight: bold;">⚠️ Deadline er i dag!</div></td>'
                     elif deadline_date == tomorrow_date:
-                        warning = "📅 Deadline er i morgen!"
+                        warning_html = '<td style="vertical-align: middle;"><div style="background-color: #fff3cd; color: #856404; padding: 10px 20px; border-radius: 10px; font-weight: bold;">📅 Deadline er i morgen!</div></td>'
                     
                     return f'''
-                    <div class="combined-greeting-deadline">
-                        <div class="greeting-row">
-                            <div class="greeting-text">👋 Hei {subscriber_name}!</div>
-                        </div>
-                        <div class="deadline-row">
-                            <div class="deadline-info">
-                                <span class="deadline-icon">⏰</span>
-                                <div class="deadline-details">
-                                    <div class="deadline-title">Gameweek {neste_gw.get('id', '?')} Deadline</div>
-                                    <div class="deadline-time">{dager}d {timer}t {minutter}m</div>
-                                    <div class="deadline-date">{deadline.strftime('%A %d. %B %H:%M')}</div>
-                                </div>
-                            </div>
-                            {f'<div class="deadline-warning">{warning}</div>' if warning else ''}
-                        </div>
-                    </div>'''
+                    <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #d4edda; border-radius: 15px; margin-bottom: 30px;">
+                        <tr>
+                            <td style="padding: 25px;">
+                                <!-- Greeting -->
+                                <div style="font-size: 1.4em; font-weight: bold; color: #1a5928; margin-bottom: 15px;">👋 Hei {subscriber_name}!</div>
+                                
+                                <!-- Deadline row -->
+                                <table width="100%" cellpadding="0" cellspacing="0" style="border-top: 2px solid rgba(0,0,0,0.1); padding-top: 15px;">
+                                    <tr>
+                                        <td style="vertical-align: middle; padding-top: 15px;">
+                                            <table cellpadding="0" cellspacing="0">
+                                                <tr>
+                                                    <td style="font-size: 2.5em; vertical-align: middle; padding-right: 15px;">⏰</td>
+                                                    <td style="vertical-align: middle;">
+                                                        <div style="font-size: 1.1em; font-weight: bold; color: #1a5928;">Gameweek {neste_gw.get('id', '?')} Deadline</div>
+                                                        <div style="font-size: 1.8em; font-weight: bold; color: #c0392b;">{dager}d {timer}t {minutter}m</div>
+                                                        <div style="font-size: 0.95em; color: #2d6a3d;">{deadline.strftime('%A %d. %B %H:%M')}</div>
+                                                    </td>
+                                                </tr>
+                                            </table>
+                                        </td>
+                                        {warning_html}
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+                    </table>'''
         except:
             pass
         
         return f'''
-        <div class="combined-greeting-deadline">
-            <div class="greeting-text">👋 Hei {subscriber_name}! Her er din personlige FPL-rapport</div>
-        </div>'''
+        <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #d4edda; border-radius: 15px; margin-bottom: 30px;">
+            <tr>
+                <td style="padding: 25px;">
+                    <div style="font-size: 1.4em; font-weight: bold; color: #1a5928;">👋 Hei {subscriber_name}! Her er din personlige FPL-rapport</div>
+                </td>
+            </tr>
+        </table>'''
     
     def _get_drommelag_html(self):
         """Genererer HTML for drømmelaget"""
@@ -2846,14 +2865,33 @@ class FPLAnalyzer:
                     rank_text = "-"
                     score_text = "-"
                 
+                # Posisjons-badge farger (inline for e-post-kompatibilitet)
+                pos_colors = {
+                    'gkp': ('background-color: #ffcc00; color: #000;', '#ffcc00'),
+                    'def': ('background-color: #00ff87; color: #000;', '#00ff87'),
+                    'mid': ('background-color: #00bfff; color: #000;', '#00bfff'),
+                    'fwd': ('background-color: #ff6b6b; color: #fff;', '#ff6b6b')
+                }
+                pos_style = pos_colors.get(pos_type.lower(), ('background-color: #ccc; color: #000;', '#ccc'))[0]
+                
+                # Rank farger
+                rank_colors = {
+                    'rank-gold': 'color: #b8860b; font-weight: bold;',
+                    'rank-silver': 'color: #666; font-weight: bold;',
+                    'rank-bronze': 'color: #cd7f32; font-weight: bold;',
+                    'rank-normal': 'color: #888;',
+                    'rank-na': 'color: #ccc;'
+                }
+                rank_style = rank_colors.get(rank_class, 'color: #888;')
+                
                 row_html = f'''
                 <tr>
-                    <td><span class="pos-badge pos-{pos_type.lower()}">{pos_type}</span></td>
-                    <td class="player-name">{name}{captain_mark}</td>
-                    <td><span class="team-badge">{team}</span></td>
-                    <td class="price">£{price:.1f}m</td>
-                    <td><span class="{rank_class}">{rank_text}</span></td>
-                    <td class="xpts-value">{score_text}</td>
+                    <td style="padding: 10px 8px; border-bottom: 1px solid #e0e0e0;"><span style="{pos_style} padding: 3px 8px; border-radius: 5px; font-size: 0.8em; font-weight: bold;">{pos_type}</span></td>
+                    <td style="padding: 10px 8px; border-bottom: 1px solid #e0e0e0; font-weight: 600; color: #000;">{name}{captain_mark}</td>
+                    <td style="padding: 10px 8px; border-bottom: 1px solid #e0e0e0;"><span style="background-color: #e8e8e8; padding: 2px 6px; border-radius: 4px; font-size: 0.85em;">{team}</span></td>
+                    <td style="padding: 10px 8px; border-bottom: 1px solid #e0e0e0; color: #1a5928; font-weight: 600;">£{price:.1f}m</td>
+                    <td style="padding: 10px 8px; border-bottom: 1px solid #e0e0e0;"><span style="{rank_style}">{rank_text}</span></td>
+                    <td style="padding: 10px 8px; border-bottom: 1px solid #e0e0e0; font-weight: bold; color: #1a5928;">{score_text}</td>
                 </tr>'''
                 
                 if position <= 11:
@@ -2867,206 +2905,81 @@ class FPLAnalyzer:
             top_25 = sum(1 for r in all_ranks if r <= 25)
             
             html = f'''
-        <div class="my-team-container">
-            <div class="my-team-header-row">
-                <div class="team-info">
-                    <div class="team-name">⚽ {team_name}</div>
-                    <div class="team-subtitle">Rangert mot vår AI-analyse • Gameweek {current_gw}</div>
-                </div>
-                <div class="team-stats-row">
-                    <div class="stat-box">
-                        <div class="stat-number">#{avg_rank:.0f}</div>
-                        <div class="stat-text">Snittrangering</div>
-                    </div>
-                    <div class="stat-box">
-                        <div class="stat-number">{top_10}</div>
-                        <div class="stat-text">Topp 10</div>
-                    </div>
-                    <div class="stat-box">
-                        <div class="stat-number">{top_25}</div>
-                        <div class="stat-text">Topp 25</div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="my-team-tables">
-                <div class="team-table-section">
-                    <div class="table-title">⚽ Startoppstilling</div>
-                    <table class="my-team-table">
-                        <thead>
-                            <tr>
-                                <th>Pos</th>
-                                <th>Spiller</th>
-                                <th>Lag</th>
-                                <th>Pris</th>
-                                <th>Rank</th>
-                                <th>xPts</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {startere_html}
-                        </tbody>
+        <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #d4edda; border-radius: 20px; margin-bottom: 25px;">
+            <tr>
+                <td style="padding: 25px;">
+                    <!-- Header med lag-navn og stats -->
+                    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 20px; border-bottom: 2px solid rgba(0,0,0,0.1); padding-bottom: 20px;">
+                        <tr>
+                            <td style="vertical-align: top;">
+                                <div style="font-size: 1.8em; font-weight: bold; color: #1a5928; margin-bottom: 5px;">⚽ {team_name}</div>
+                                <div style="font-size: 0.95em; color: #2d6a3d;">Rangert mot vår AI-analyse • Gameweek {current_gw}</div>
+                            </td>
+                            <td align="right" style="vertical-align: top;">
+                                <table cellpadding="0" cellspacing="0">
+                                    <tr>
+                                        <td style="background-color: #1a5928; padding: 15px 25px; border-radius: 12px; text-align: center; margin-right: 10px;">
+                                            <div style="font-size: 1.8em; font-weight: bold; color: #90EE90;">#{avg_rank:.0f}</div>
+                                            <div style="font-size: 0.75em; color: #c8e6c9; text-transform: uppercase;">Snittrangering</div>
+                                        </td>
+                                        <td width="15"></td>
+                                        <td style="background-color: #1a5928; padding: 15px 25px; border-radius: 12px; text-align: center;">
+                                            <div style="font-size: 1.8em; font-weight: bold; color: #90EE90;">{top_10}</div>
+                                            <div style="font-size: 0.75em; color: #c8e6c9; text-transform: uppercase;">Topp 10</div>
+                                        </td>
+                                        <td width="15"></td>
+                                        <td style="background-color: #1a5928; padding: 15px 25px; border-radius: 12px; text-align: center;">
+                                            <div style="font-size: 1.8em; font-weight: bold; color: #90EE90;">{top_25}</div>
+                                            <div style="font-size: 0.75em; color: #c8e6c9; text-transform: uppercase;">Topp 25</div>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
                     </table>
-                </div>
-                
-                <div class="team-table-section bench-section">
-                    <div class="table-title bench-title">🪑 Benk</div>
-                    <table class="my-team-table">
-                        <thead>
-                            <tr>
-                                <th>Pos</th>
-                                <th>Spiller</th>
-                                <th>Lag</th>
-                                <th>Pris</th>
-                                <th>Rank</th>
-                                <th>xPts</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {benk_html}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-        
-        <style>
-            .my-team-container {{
-                background: #d4edda;
-                border-radius: 20px;
-                padding: 25px;
-                margin-bottom: 25px;
-                color: #000;
-            }}
-            .my-team-header-row {{
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                flex-wrap: wrap;
-                gap: 20px;
-                margin-bottom: 25px;
-                padding-bottom: 20px;
-                border-bottom: 2px solid rgba(0,0,0,0.1);
-            }}
-            .team-info {{
-                flex: 1;
-                min-width: 250px;
-            }}
-            .team-name {{
-                font-size: 1.8em;
-                font-weight: bold;
-                color: #1a5928;
-                margin-bottom: 5px;
-            }}
-            .team-subtitle {{
-                font-size: 0.95em;
-                color: #2d6a3d;
-            }}
-            .team-stats-row {{
-                display: flex;
-                gap: 15px;
-            }}
-            .stat-box {{
-                background: #1a5928;
-                padding: 15px 25px;
-                border-radius: 12px;
-                text-align: center;
-                min-width: 100px;
-            }}
-            .stat-number {{
-                font-size: 1.8em;
-                font-weight: bold;
-                color: #90EE90;
-            }}
-            .stat-text {{
-                font-size: 0.8em;
-                color: #c8e6c9;
-                text-transform: uppercase;
-                letter-spacing: 0.5px;
-            }}
-            .my-team-tables {{
-                display: flex;
-                flex-direction: column;
-                gap: 20px;
-            }}
-            .team-table-section {{
-                background: #fff;
-                border-radius: 12px;
-                padding: 15px;
-            }}
-            .bench-section {{
-                background: #f5f5f5;
-            }}
-            .table-title {{
-                font-size: 1.1em;
-                font-weight: bold;
-                color: #1a5928;
-                margin-bottom: 12px;
-                padding-left: 5px;
-            }}
-            .bench-title {{
-                color: #666 !important;
-            }}
-            .my-team-table {{
-                width: 100%;
-                border-collapse: collapse;
-                font-size: 0.9em;
-            }}
-            .my-team-table th {{
-                background: #1a5928;
-                color: white;
-                padding: 10px 8px;
-                text-align: left;
-                font-weight: 600;
-            }}
-            .bench-section .my-team-table th {{
-                background: #666;
-            }}
-            .my-team-table td {{
-                padding: 10px 8px;
-                border-bottom: 1px solid #e0e0e0;
-                color: #333;
-            }}
-            .my-team-table tr:hover {{
-                background: #f0fff0;
-            }}
-            .bench-section .my-team-table tr:hover {{
-                background: #eee;
-            }}
-            .my-team-table .player-name {{
-                font-weight: 600;
-                color: #000;
-            }}
-            .my-team-table .price {{
-                color: #1a5928;
-                font-weight: 600;
-            }}
-            .my-team-table .xpts-value {{
-                font-weight: bold;
-                color: #1a5928;
-            }}
-            .my-team-table .pos-badge {{
-                padding: 3px 8px;
-                border-radius: 5px;
-                font-size: 0.8em;
-                font-weight: bold;
-            }}
-            .my-team-table .pos-gkp {{ background: #ffcc00; color: #000; }}
-            .my-team-table .pos-def {{ background: #00ff87; color: #000; }}
-            .my-team-table .pos-mid {{ background: #00bfff; color: #000; }}
-            .my-team-table .pos-fwd {{ background: #ff6b6b; color: #fff; }}
-            .my-team-table .team-badge {{
-                background: #e8e8e8;
-                padding: 2px 6px;
-                border-radius: 4px;
-                font-size: 0.85em;
-            }}
-            .my-team-table .rank-gold {{ color: #b8860b; font-weight: bold; }}
-            .my-team-table .rank-silver {{ color: #666; font-weight: bold; }}
-            .my-team-table .rank-bronze {{ color: #cd7f32; font-weight: bold; }}
-            .my-team-table .rank-normal {{ color: #888; }}
-            .my-team-table .rank-na {{ color: #ccc; }}
-        </style>
+                    
+                    <!-- Startoppstilling -->
+                    <div style="background-color: #ffffff; border-radius: 12px; padding: 15px; margin-bottom: 15px;">
+                        <div style="font-size: 1.1em; font-weight: bold; color: #1a5928; margin-bottom: 12px;">⚽ Startoppstilling</div>
+                        <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse: collapse;">
+                            <thead>
+                                <tr>
+                                    <th style="background-color: #1a5928; color: white; padding: 10px 8px; text-align: left; font-weight: 600;">Pos</th>
+                                    <th style="background-color: #1a5928; color: white; padding: 10px 8px; text-align: left; font-weight: 600;">Spiller</th>
+                                    <th style="background-color: #1a5928; color: white; padding: 10px 8px; text-align: left; font-weight: 600;">Lag</th>
+                                    <th style="background-color: #1a5928; color: white; padding: 10px 8px; text-align: left; font-weight: 600;">Pris</th>
+                                    <th style="background-color: #1a5928; color: white; padding: 10px 8px; text-align: left; font-weight: 600;">Rank</th>
+                                    <th style="background-color: #1a5928; color: white; padding: 10px 8px; text-align: left; font-weight: 600;">xPts</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {startere_html}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Benk -->
+                    <div style="background-color: #f5f5f5; border-radius: 12px; padding: 15px;">
+                        <div style="font-size: 1.1em; font-weight: bold; color: #666666; margin-bottom: 12px;">🪑 Benk</div>
+                        <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse: collapse;">
+                            <thead>
+                                <tr>
+                                    <th style="background-color: #666666; color: white; padding: 10px 8px; text-align: left; font-weight: 600;">Pos</th>
+                                    <th style="background-color: #666666; color: white; padding: 10px 8px; text-align: left; font-weight: 600;">Spiller</th>
+                                    <th style="background-color: #666666; color: white; padding: 10px 8px; text-align: left; font-weight: 600;">Lag</th>
+                                    <th style="background-color: #666666; color: white; padding: 10px 8px; text-align: left; font-weight: 600;">Pris</th>
+                                    <th style="background-color: #666666; color: white; padding: 10px 8px; text-align: left; font-weight: 600;">Rank</th>
+                                    <th style="background-color: #666666; color: white; padding: 10px 8px; text-align: left; font-weight: 600;">xPts</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {benk_html}
+                            </tbody>
+                        </table>
+                    </div>
+                </td>
+            </tr>
+        </table>
         '''
             
             return html
