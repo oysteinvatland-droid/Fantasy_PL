@@ -2809,16 +2809,19 @@ class FPLAnalyzer:
                 score = player_row[score_col].values[0]
                 return idx + 1, score
             
-            # Bygg spillerliste
+            # Bygg spillerliste og samle data for anbefalinger
             startere_html = ""
             benk_html = ""
             all_ranks = []
+            my_players = []  # For transfer-anbefalinger
+            my_player_ids = set()  # For å unngå å anbefale spillere du allerede har
             
             for pick in picks:
                 player_id = pick['element']
                 position = pick['position']
                 is_captain = pick['is_captain']
                 is_vice = pick['is_vice_captain']
+                my_player_ids.add(player_id)
                 
                 player_info = self.players_df[self.players_df['id'] == player_id]
                 if player_info.empty:
@@ -2826,7 +2829,8 @@ class FPLAnalyzer:
                 
                 player = player_info.iloc[0]
                 name = player['web_name']
-                team = self.teams_df[self.teams_df['id'] == player['team']].iloc[0]['short_name']
+                player_team_id = player['team']
+                team = self.teams_df[self.teams_df['id'] == player_team_id].iloc[0]['short_name']
                 price = player['now_cost'] / 10
                 pos_type = ['GKP', 'DEF', 'MID', 'FWD'][player['element_type'] - 1]
                 
@@ -2845,6 +2849,18 @@ class FPLAnalyzer:
                 else:
                     rank, score = None, None
                     total_in_pos = 0
+                
+                # Lagre spillerdata for anbefalinger (kun startere)
+                if position <= 11 and rank and score:
+                    my_players.append({
+                        'id': player_id,
+                        'name': name,
+                        'team': team,
+                        'pos_type': pos_type,
+                        'price': price,
+                        'rank': rank,
+                        'score': score
+                    })
                 
                 captain_mark = " (C)" if is_captain else " (V)" if is_vice else ""
                 
@@ -2904,6 +2920,125 @@ class FPLAnalyzer:
             top_10 = sum(1 for r in all_ranks if r <= 10)
             top_25 = sum(1 for r in all_ranks if r <= 25)
             
+            # === ANBEFALT KAPTEIN ===
+            # Finn spilleren med høyest xPts blant dine startere
+            best_captain = None
+            if my_players:
+                best_captain = max(my_players, key=lambda x: x['score'])
+            
+            captain_html = ""
+            if best_captain:
+                captain_html = f'''
+                    <div style="background-color: #fff3cd; border-radius: 12px; padding: 15px; margin-bottom: 15px;">
+                        <div style="font-size: 1.1em; font-weight: bold; color: #856404; margin-bottom: 10px;">👑 Anbefalt Kaptein</div>
+                        <table width="100%" cellpadding="0" cellspacing="0">
+                            <tr>
+                                <td style="vertical-align: middle;">
+                                    <span style="font-size: 1.4em; font-weight: bold; color: #1a1a2e;">{best_captain['name']}</span>
+                                    <span style="background-color: #e8e8e8; padding: 2px 8px; border-radius: 4px; font-size: 0.85em; margin-left: 10px;">{best_captain['team']}</span>
+                                </td>
+                                <td align="right" style="vertical-align: middle;">
+                                    <span style="background-color: #28a745; color: white; padding: 8px 15px; border-radius: 8px; font-weight: bold;">xPts: {best_captain['score']:.2f}</span>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>'''
+            
+            # === TRANSFER-ANBEFALINGER ===
+            # Finn spillere med lav rangering og foreslå erstatninger
+            transfer_recommendations = []
+            
+            # Sorter dine spillere etter dårligst rangering
+            worst_players = sorted([p for p in my_players if p['rank'] > 15], key=lambda x: -x['rank'])[:3]
+            
+            for worst in worst_players:
+                pos = worst['pos_type']
+                max_price = worst['price'] + 0.5  # Kan bruke litt mer
+                
+                # Finn beste erstatning basert på posisjon
+                if pos == 'FWD':
+                    candidates = spisser_df[
+                        (~spisser_df['id'].isin(my_player_ids)) & 
+                        (spisser_df['pris_mill'] <= max_price)
+                    ].head(1)
+                    score_col = 'total_vektet_spiss_vurdering'
+                elif pos == 'MID':
+                    candidates = midtbane_df[
+                        (~midtbane_df['id'].isin(my_player_ids)) & 
+                        (midtbane_df['pris_mill'] <= max_price)
+                    ].head(1)
+                    score_col = 'total_vektet_midtbane_vurdering'
+                elif pos == 'DEF':
+                    candidates = forsvar_df[
+                        (~forsvar_df['id'].isin(my_player_ids)) & 
+                        (forsvar_df['pris_mill'] <= max_price)
+                    ].head(1)
+                    score_col = 'xPts_adjusted'
+                elif pos == 'GKP':
+                    candidates = keeper_df[
+                        (~keeper_df['id'].isin(my_player_ids)) & 
+                        (keeper_df['pris_mill'] <= max_price)
+                    ].head(1)
+                    score_col = 'xPts_adjusted'
+                else:
+                    continue
+                
+                if not candidates.empty:
+                    replacement = candidates.iloc[0]
+                    replacement_team = self.teams_df[self.teams_df['id'] == replacement['team']].iloc[0]['short_name']
+                    transfer_recommendations.append({
+                        'out_name': worst['name'],
+                        'out_team': worst['team'],
+                        'out_rank': worst['rank'],
+                        'out_price': worst['price'],
+                        'in_name': replacement['web_name'],
+                        'in_team': replacement_team,
+                        'in_rank': 1,  # Top i sin posisjon blant tilgjengelige
+                        'in_price': replacement['pris_mill'],
+                        'in_score': replacement[score_col]
+                    })
+            
+            # Bygg transfer HTML
+            transfers_html = ""
+            if transfer_recommendations:
+                transfer_rows = ""
+                for i, tr in enumerate(transfer_recommendations[:3], 1):
+                    transfer_rows += f'''
+                        <tr>
+                            <td style="padding: 12px 8px; border-bottom: 1px solid #e0e0e0; vertical-align: middle;">
+                                <span style="background-color: #dc3545; color: white; padding: 3px 8px; border-radius: 50%; font-weight: bold; font-size: 0.8em;">{i}</span>
+                            </td>
+                            <td style="padding: 12px 8px; border-bottom: 1px solid #e0e0e0; vertical-align: middle;">
+                                <div style="color: #dc3545; font-weight: 600;">{tr['out_name']}</div>
+                                <div style="font-size: 0.8em; color: #888;">#{tr['out_rank']} • £{tr['out_price']:.1f}m</div>
+                            </td>
+                            <td style="padding: 12px 8px; border-bottom: 1px solid #e0e0e0; text-align: center; vertical-align: middle;">
+                                <span style="font-size: 1.5em;">➡️</span>
+                            </td>
+                            <td style="padding: 12px 8px; border-bottom: 1px solid #e0e0e0; vertical-align: middle;">
+                                <div style="color: #28a745; font-weight: 600;">{tr['in_name']}</div>
+                                <div style="font-size: 0.8em; color: #888;">#{tr['in_rank']} • £{tr['in_price']:.1f}m • xPts: {tr['in_score']:.2f}</div>
+                            </td>
+                        </tr>'''
+                
+                transfers_html = f'''
+                    <div style="background-color: #f8f9fa; border-radius: 12px; padding: 15px; margin-bottom: 15px; border: 2px solid #dee2e6;">
+                        <div style="font-size: 1.1em; font-weight: bold; color: #495057; margin-bottom: 12px;">🔄 Topp 3 Anbefalte Transfers</div>
+                        <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse: collapse;">
+                            <thead>
+                                <tr>
+                                    <th style="padding: 8px; text-align: left; color: #6c757d; font-size: 0.8em;">#</th>
+                                    <th style="padding: 8px; text-align: left; color: #6c757d; font-size: 0.8em;">UT</th>
+                                    <th style="padding: 8px; text-align: center; color: #6c757d; font-size: 0.8em;"></th>
+                                    <th style="padding: 8px; text-align: left; color: #6c757d; font-size: 0.8em;">INN</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {transfer_rows}
+                            </tbody>
+                        </table>
+                    </div>'''
+            
             html = f'''
         <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #d4edda; border-radius: 20px; margin-bottom: 25px;">
             <tr>
@@ -2937,6 +3072,10 @@ class FPLAnalyzer:
                             </td>
                         </tr>
                     </table>
+                    
+                    {captain_html}
+                    
+                    {transfers_html}
                     
                     <!-- Startoppstilling -->
                     <div style="background-color: #ffffff; border-radius: 12px; padding: 15px; margin-bottom: 15px;">
