@@ -115,13 +115,13 @@ jobs:
                 open('send_email.txt', 'w').write('true')
                 open('gw_number.txt', 'w').write(str(gw_number))
                 open('hours_until.txt', 'w').write(f'{hours_until:.0f}')
-            elif hours_until <= 24 and hours_until > 0:
-                print('SEND_EMAIL=true')
+            elif hours_until <= 24 and hours_until > 23:
+                print('SEND_EMAIL=true (mellom 23-24 timer til deadline)')
                 open('send_email.txt', 'w').write('true')
                 open('gw_number.txt', 'w').write(str(gw_number))
                 open('hours_until.txt', 'w').write(f'{hours_until:.0f}')
             else:
-                print(f'Mer enn 24 timer til deadline - sender ikke ukentlig mail')
+                print(f'Ikke i vinduet 23-24 timer til deadline - sender ikke ukentlig mail')
                 open('send_email.txt', 'w').write('false')
         else:
             print('Ingen kommende gameweek funnet')
