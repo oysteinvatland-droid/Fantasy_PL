@@ -1,6 +1,6 @@
 import requests
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, timedelta
 import numpy as np
 import warnings
 import urllib3
@@ -2493,12 +2493,17 @@ class FPLAnalyzer:
                     timer = tid_igjen.seconds // 3600
                     minutter = (tid_igjen.seconds % 3600) // 60
                     
+                    # Sjekk om deadline er samme dag som i dag
+                    deadline_date = deadline.date()
+                    today_date = nå.date()
+                    tomorrow_date = (nå + timedelta(days=1)).date()
+                    
                     warning = ""
                     if dager == 0 and timer < 6:
                         warning = "⚠️ Bare noen timer igjen!"
-                    elif dager == 0:
+                    elif deadline_date == today_date:
                         warning = "⚠️ Deadline er i dag!"
-                    elif dager == 1:
+                    elif deadline_date == tomorrow_date:
                         warning = "📅 Deadline er i morgen!"
                     
                     return f'''
