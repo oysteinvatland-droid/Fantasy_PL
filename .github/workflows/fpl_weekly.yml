@@ -1,99 +1,108 @@
 name: FPL Weekly Report
 
 on:
-  schedule:
-    - cron: '0 * * * *'  # Kjører hver time
-  workflow_dispatch:
-    inputs:
-      force_send:
-        description: 'Send e-post uansett deadline (for testing)'
-        required: false
-        default: 'false'
-        type: choice
-        options:
-          - 'false'
-          - 'true'
+schedule:
+- cron: ‘0 * * * *’  # Kjører hver time
+workflow_dispatch:
+inputs:
+force_send:
+description: ‘Send e-post uansett deadline (for testing)’
+required: false
+default: ‘false’
+type: choice
+options:
+- ‘false’
+- ‘true’
 
 jobs:
-  send-fpl-report:
-    runs-on: ubuntu-latest
-    
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-    
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.11'
-    
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
-    
-    - name: Fetch subscribers from Firebase
-      run: |
-        echo "=== Fetching subscribers from Firebase ==="
-        python3 fetch_subscribers.py
-        echo "=== All subscribers ==="
-        cat subscribers.json
-        echo ""
-        echo "=== New subscribers (pending welcome) ==="
-        cat new_subscribers.json
-    
-    - name: Check for new subscribers
-      id: check_new
-      run: |
-        HAS_NEW=$(cat has_new_subscribers.txt)
-        echo "has_new_subscribers=$HAS_NEW" >> $GITHUB_OUTPUT
-        echo "Has new subscribers: $HAS_NEW"
-    
-    - name: Generate welcome reports for new subscribers
-      if: steps.check_new.outputs.has_new_subscribers == 'true'
-      run: |
-        echo "=== Generating welcome reports ==="
-        python fpl_analyzer.py --subscribers new_subscribers.json 2>&1 | tee welcome_console.txt
-        
-        # Flytt generated_reports.json til welcome_reports.json
-        if [ -f "generated_reports.json" ]; then
-          mv generated_reports.json welcome_reports.json
-          echo "Welcome reports generated:"
-          cat welcome_reports.json
-        fi
-    
-    - name: Send welcome emails to new subscribers
-      if: steps.check_new.outputs.has_new_subscribers == 'true'
-      env:
-        EMAIL_USERNAME: ${{ secrets.EMAIL_USERNAME }}
-        EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
-      run: |
-        echo "=== Sending welcome emails ==="
-        python3 send_emails.py --welcome
-    
-    - name: Mark welcome sent in Firebase
-      if: steps.check_new.outputs.has_new_subscribers == 'true'
-      run: |
-        echo "=== Updating Firebase ==="
-        python3 mark_welcome_sent.py
-    
-    - name: Check deadline
-      id: deadline_check
-      env:
-        FORCE_SEND: ${{ github.event.inputs.force_send }}
-      run: |
-        python -c "
-        import requests
-        import os
-        from datetime import datetime, timezone
+send-fpl-report:
+runs-on: ubuntu-latest
 
-        force_send = os.environ.get('FORCE_SEND', 'false') == 'true'
+```
+steps:
+- name: Checkout repository
+  uses: actions/checkout@v4
 
-        response = requests.get('https://fantasy.premierleague.com/api/bootstrap-static/', timeout=10)
+- name: Set up Python
+  uses: actions/setup-python@v5
+  with:
+    python-version: '3.11'
+
+- name: Install dependencies
+  run: |
+    python -m pip install --upgrade pip
+    pip install -r requirements.txt
+
+- name: Fetch subscribers from Firebase
+  run: |
+    echo "=== Fetching subscribers from Firebase ==="
+    python3 fetch_subscribers.py
+    echo "=== All subscribers ==="
+    cat subscribers.json
+    echo ""
+    echo "=== New subscribers (pending welcome) ==="
+    cat new_subscribers.json
+
+- name: Check for new subscribers
+  id: check_new
+  run: |
+    HAS_NEW=$(cat has_new_subscribers.txt)
+    echo "has_new_subscribers=$HAS_NEW" >> $GITHUB_OUTPUT
+    echo "Has new subscribers: $HAS_NEW"
+
+- name: Generate welcome reports for new subscribers
+  if: steps.check_new.outputs.has_new_subscribers == 'true'
+  run: |
+    echo "=== Generating welcome reports ==="
+    python fpl_analyzer.py --subscribers new_subscribers.json 2>&1 | tee welcome_console.txt
+    
+    # Flytt generated_reports.json til welcome_reports.json
+    if [ -f "generated_reports.json" ]; then
+      mv generated_reports.json welcome_reports.json
+      echo "Welcome reports generated:"
+      cat welcome_reports.json
+    fi
+
+- name: Send welcome emails to new subscribers
+  if: steps.check_new.outputs.has_new_subscribers == 'true'
+  env:
+    EMAIL_USERNAME: ${{ secrets.EMAIL_USERNAME }}
+    EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+  run: |
+    echo "=== Sending welcome emails ==="
+    python3 send_emails.py --welcome
+
+- name: Mark welcome sent in Firebase
+  if: steps.check_new.outputs.has_new_subscribers == 'true'
+  run: |
+    echo "=== Updating Firebase ==="
+    python3 mark_welcome_sent.py
+
+- name: Check deadline
+  id: deadline_check
+  env:
+    FORCE_SEND: ${{ github.event.inputs.force_send }}
+  run: |
+    python -c "
+    import requests
+    import os
+    from datetime import datetime, timezone
+
+    force_send = os.environ.get('FORCE_SEND', 'false') == 'true'
+
+    try:
+        response = requests.get('https://fantasy.premierleague.com/api/bootstrap-static/', timeout=30)
+        response.raise_for_status()
         data = response.json()
-
+        
+        if not isinstance(data, dict):
+            print(f'Unexpected data type: {type(data)}')
+            open('send_email.txt', 'w').write('false')
+            exit(0)
+        
         neste_gw = None
-        for event in data.get('events', []):
+        events = data.get('events', [])
+        for event in events:
             if not event.get('finished', True):
                 neste_gw = event
                 break
@@ -126,49 +135,52 @@ jobs:
         else:
             print('Ingen kommende gameweek funnet')
             open('send_email.txt', 'w').write('false')
-        "
+    except Exception as e:
+        print(f'Feil ved API-kall: {e}')
+        open('send_email.txt', 'w').write('false')
+    "
+
+- name: Set email flag
+  id: set_flag
+  run: |
+    SEND_EMAIL=$(cat send_email.txt)
+    echo "send_email=$SEND_EMAIL" >> $GITHUB_OUTPUT
+    echo "Send weekly email: $SEND_EMAIL"
     
-    - name: Set email flag
-      id: set_flag
-      run: |
-        SEND_EMAIL=$(cat send_email.txt)
-        echo "send_email=$SEND_EMAIL" >> $GITHUB_OUTPUT
-        echo "Send weekly email: $SEND_EMAIL"
-        
-        if [ "$SEND_EMAIL" = "true" ]; then
-          GW_NUMBER=$(cat gw_number.txt)
-          HOURS_UNTIL=$(cat hours_until.txt)
-          echo "gw_number=$GW_NUMBER" >> $GITHUB_OUTPUT
-          echo "hours_until=$HOURS_UNTIL" >> $GITHUB_OUTPUT
-        fi
-    
-    - name: Run FPL analysis for all subscribers
-      if: steps.set_flag.outputs.send_email == 'true'
-      run: |
-        echo "=== Generating weekly reports ==="
-        python fpl_analyzer.py --subscribers subscribers.json 2>&1 | tee console_output.txt
-    
-    - name: Send weekly emails to all subscribers
-      if: steps.set_flag.outputs.send_email == 'true'
-      env:
-        EMAIL_USERNAME: ${{ secrets.EMAIL_USERNAME }}
-        EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
-        GW_NUMBER: ${{ steps.set_flag.outputs.gw_number }}
-        HOURS_UNTIL: ${{ steps.set_flag.outputs.hours_until }}
-      run: python3 send_emails.py
-    
-    - name: Upload reports as artifact
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: fpl-reports-${{ github.run_number }}
-        path: |
-          reports/
-          console_output.txt
-          welcome_console.txt
-          generated_reports.json
-          welcome_reports.json
-          subscribers.json
-          new_subscribers.json
-        retention-days: 30
-        if-no-files-found: ignore
+    if [ "$SEND_EMAIL" = "true" ]; then
+      GW_NUMBER=$(cat gw_number.txt)
+      HOURS_UNTIL=$(cat hours_until.txt)
+      echo "gw_number=$GW_NUMBER" >> $GITHUB_OUTPUT
+      echo "hours_until=$HOURS_UNTIL" >> $GITHUB_OUTPUT
+    fi
+
+- name: Run FPL analysis for all subscribers
+  if: steps.set_flag.outputs.send_email == 'true'
+  run: |
+    echo "=== Generating weekly reports ==="
+    python fpl_analyzer.py --subscribers subscribers.json 2>&1 | tee console_output.txt
+
+- name: Send weekly emails to all subscribers
+  if: steps.set_flag.outputs.send_email == 'true'
+  env:
+    EMAIL_USERNAME: ${{ secrets.EMAIL_USERNAME }}
+    EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+    GW_NUMBER: ${{ steps.set_flag.outputs.gw_number }}
+    HOURS_UNTIL: ${{ steps.set_flag.outputs.hours_until }}
+  run: python3 send_emails.py
+
+- name: Upload reports as artifact
+  if: always()
+  uses: actions/upload-artifact@v4
+  with:
+    name: fpl-reports-${{ github.run_number }}
+    path: |
+      reports/
+      console_output.txt
+      welcome_console.txt
+      generated_reports.json
+      welcome_reports.json
+      subscribers.json
+      new_subscribers.json
+    retention-days: 30
+    if-no-files-found: ignore
