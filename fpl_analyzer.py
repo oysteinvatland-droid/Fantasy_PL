@@ -2557,7 +2557,7 @@ class FPLAnalyzer:
         </table>'''
     
     def _get_value_for_money_html(self):
-        """Genererer HTML for Value for Money-tabellen"""
+        """Genererer HTML for Value for Money-tabellen - én spiller per posisjon"""
         try:
             # Hent topp spillere fra hver posisjon
             spisser_df = self.beregn_avansert_spiss_score()
@@ -2583,20 +2583,18 @@ class FPLAnalyzer:
             forsvar_df['pos'] = 'DEF'
             keeper_df['pos'] = 'GKP'
             
-            # Kombiner alle og sorter etter value
-            all_players = pd.concat([
-                spisser_df[['web_name', 'team', 'pris_mill', 'xPts_adjusted', 'value', 'pos']],
-                midtbane_df[['web_name', 'team', 'pris_mill', 'xPts_adjusted', 'value', 'pos']],
-                forsvar_df[['web_name', 'team', 'pris_mill', 'xPts_adjusted', 'value', 'pos']],
-                keeper_df[['web_name', 'team', 'pris_mill', 'xPts_adjusted', 'value', 'pos']]
-            ])
+            # Finn beste value for hver posisjon
+            best_keeper = keeper_df.sort_values(by='value', ascending=False).head(1)
+            best_forsvar = forsvar_df.sort_values(by='value', ascending=False).head(1)
+            best_midtbane = midtbane_df.sort_values(by='value', ascending=False).head(1)
+            best_spiss = spisser_df.sort_values(by='value', ascending=False).head(1)
             
-            # Sorter etter value og ta topp 5
-            top_value = all_players.sort_values(by='value', ascending=False).head(5)
+            # Kombiner i rekkefølge: GKP, DEF, MID, FWD
+            top_value = pd.concat([best_keeper, best_forsvar, best_midtbane, best_spiss])
             
             # Bygg HTML
             rows_html = ""
-            for i, (_, row) in enumerate(top_value.iterrows(), 1):
+            for _, row in top_value.iterrows():
                 team_name = self.teams_df[self.teams_df['id'] == row['team']].iloc[0]['short_name']
                 
                 # Posisjons-farger
@@ -2608,18 +2606,8 @@ class FPLAnalyzer:
                 }
                 pos_style = pos_colors.get(row['pos'], 'background-color: #ccc; color: #000;')
                 
-                # Medalje for topp 3
-                medal = ""
-                if i == 1:
-                    medal = '<span style="color: #ffd700; font-size: 1.2em;">🥇</span> '
-                elif i == 2:
-                    medal = '<span style="color: #c0c0c0; font-size: 1.2em;">🥈</span> '
-                elif i == 3:
-                    medal = '<span style="color: #cd7f32; font-size: 1.2em;">🥉</span> '
-                
                 rows_html += f'''
                 <tr>
-                    <td style="padding: 12px 8px; border-bottom: 1px solid #e0e0e0; text-align: center;">{medal}{i}</td>
                     <td style="padding: 12px 8px; border-bottom: 1px solid #e0e0e0;"><span style="{pos_style} padding: 3px 8px; border-radius: 5px; font-size: 0.8em; font-weight: bold;">{row['pos']}</span></td>
                     <td style="padding: 12px 8px; border-bottom: 1px solid #e0e0e0; font-weight: 600; color: #000;">{row['web_name']}</td>
                     <td style="padding: 12px 8px; border-bottom: 1px solid #e0e0e0;"><span style="background-color: #e8e8e8; padding: 2px 6px; border-radius: 4px; font-size: 0.85em;">{team_name}</span></td>
@@ -2635,13 +2623,12 @@ class FPLAnalyzer:
                     <div style="margin-bottom: 20px;">
                         <span style="font-size: 2em; margin-right: 15px;">💰</span>
                         <span style="font-size: 1.5em; font-weight: bold; color: #fff;">Beste Value for Money</span>
-                        <div style="color: rgba(255,255,255,0.8); font-size: 0.9em; margin-top: 5px; margin-left: 55px;">Høyest xPts per million (xPts/£m)</div>
+                        <div style="color: rgba(255,255,255,0.8); font-size: 0.9em; margin-top: 5px; margin-left: 55px;">Høyest xPts per million (xPts/£m) per posisjon</div>
                     </div>
                     
                     <table width="100%" cellpadding="0" cellspacing="0" style="background: rgba(255,255,255,0.95); border-radius: 12px; border-collapse: collapse;">
                         <thead>
                             <tr>
-                                <th style="background-color: #1a1a2e; color: white; padding: 12px 8px; text-align: center; font-weight: 600;">#</th>
                                 <th style="background-color: #1a1a2e; color: white; padding: 12px 8px; text-align: left; font-weight: 600;">Pos</th>
                                 <th style="background-color: #1a1a2e; color: white; padding: 12px 8px; text-align: left; font-weight: 600;">Spiller</th>
                                 <th style="background-color: #1a1a2e; color: white; padding: 12px 8px; text-align: left; font-weight: 600;">Lag</th>
