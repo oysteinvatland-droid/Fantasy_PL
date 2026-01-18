@@ -1767,7 +1767,7 @@ class FPLAnalyzer:
         print("-"*100)
         print("xPts modell: 4*xG + 3*xA + MinPts + Bonus (justert for fixtures og spilletid)")
         print("-"*100)
-        spisser = self.beste_spisser_avansert(antall=25, min_minutter=180)
+        spisser = self.beste_spisser_avansert(antall=15, min_minutter=180)
         if spisser is not None:
             print(spisser.to_string(index=False))
         
@@ -1775,7 +1775,7 @@ class FPLAnalyzer:
         print("-"*100)
         print("xPts modell: 5*xG + 3*xA + 1*CS + MinPts + Bonus (justert for fixtures og spilletid)")
         print("-"*100)
-        midtbane = self.beste_midtbanespillere(antall=25, min_minutter=180)
+        midtbane = self.beste_midtbanespillere(antall=15, min_minutter=180)
         if midtbane is not None:
             print(midtbane.to_string(index=False))
         
@@ -1783,7 +1783,7 @@ class FPLAnalyzer:
         print("-"*100)
         print("xPts modell: 4*CS + 6*xG + 3*xA + MinPts + Bonus (justert for fixtures og spilletid)")
         print("-"*100)
-        forsvar = self.beste_forsvarsspillere(antall=25, min_minutter=180)
+        forsvar = self.beste_forsvarsspillere(antall=15, min_minutter=180)
         if forsvar is not None:
             print(forsvar.to_string(index=False))
         
@@ -2148,9 +2148,9 @@ class FPLAnalyzer:
         
         # Hent data
         keepere = self.beste_keepere(antall=15, min_minutter=180)
-        spisser = self.beste_spisser_avansert(antall=25, min_minutter=180)
-        midtbane = self.beste_midtbanespillere(antall=25, min_minutter=180)
-        forsvar = self.beste_forsvarsspillere(antall=25, min_minutter=180)
+        spisser = self.beste_spisser_avansert(antall=15, min_minutter=180)
+        midtbane = self.beste_midtbanespillere(antall=15, min_minutter=180)
+        forsvar = self.beste_forsvarsspillere(antall=15, min_minutter=180)
         
         # Hent mitt lag data
         mitt_lag_html = self._get_mitt_lag_html(team_id=6740096)
@@ -2374,7 +2374,7 @@ class FPLAnalyzer:
             <div class="section-header">
                 <span class="section-icon">🛡️</span>
                 <div>
-                    <div class="section-title">Top 25 Defenders - Expected Points (xPts)</div>
+                    <div class="section-title">Top 15 Defenders - Expected Points (xPts)</div>
                     <div class="section-desc">xPts Model: 4×CS + 6×xG + 3×xA + MinPts + Bonus (adjusted for fixtures & playing time)</div>
                 </div>
             </div>
@@ -2385,7 +2385,7 @@ class FPLAnalyzer:
             <div class="section-header">
                 <span class="section-icon">🎯</span>
                 <div>
-                    <div class="section-title">Top 25 Midfielders - Expected Points (xPts)</div>
+                    <div class="section-title">Top 15 Midfielders - Expected Points (xPts)</div>
                     <div class="section-desc">xPts Model: 5×xG + 3×xA + 1×CS + MinPts + Bonus (adjusted for fixtures & playing time)</div>
                 </div>
             </div>
@@ -2396,7 +2396,7 @@ class FPLAnalyzer:
             <div class="section-header">
                 <span class="section-icon">⭐</span>
                 <div>
-                    <div class="section-title">Top 25 Forwards - Expected Points (xPts)</div>
+                    <div class="section-title">Top 15 Forwards - Expected Points (xPts)</div>
                     <div class="section-desc">xPts Model: 4×xG + 3×xA + MinPts + Bonus (adjusted for fixtures & playing time)</div>
                 </div>
             </div>
@@ -2776,7 +2776,7 @@ class FPLAnalyzer:
                 <span class="section-icon">🏆</span>
                 <div>
                     <div class="section-title">Ukens Drømmelag</div>
-                    <div class="section-desc">Beste lag basert på xPts-analyse (3-4-3 formasjon med Kelleher i mål)</div>
+                    <div class="section-desc">Beste lag basert på xPts-analyse (3-4-3 formasjon)</div>
                 </div>
             </div>
             
@@ -3287,9 +3287,9 @@ class FPLAnalyzer:
         
         # Hent data
         keepere = self.beste_keepere(antall=15, min_minutter=180)
-        spisser = self.beste_spisser_avansert(antall=25, min_minutter=180)
-        midtbane = self.beste_midtbanespillere(antall=25, min_minutter=180)
-        forsvar = self.beste_forsvarsspillere(antall=25, min_minutter=180)
+        spisser = self.beste_spisser_avansert(antall=15, min_minutter=180)
+        midtbane = self.beste_midtbanespillere(antall=15, min_minutter=180)
+        forsvar = self.beste_forsvarsspillere(antall=15, min_minutter=180)
         
         # Hent personlig lag data
         mitt_lag_html = self._get_mitt_lag_html(team_id=team_id)
@@ -3573,7 +3573,7 @@ class FPLAnalyzer:
             <div class="section-header">
                 <span class="section-icon">🛡️</span>
                 <div>
-                    <div class="section-title">Top 25 Defenders - Expected Points (xPts)</div>
+                    <div class="section-title">Top 15 Defenders - Expected Points (xPts)</div>
                     <div class="section-desc">xPts Model: 4×CS + 6×xG + 3×xA + MinPts + Bonus (adjusted for fixtures & playing time)</div>
                 </div>
             </div>
@@ -3584,7 +3584,7 @@ class FPLAnalyzer:
             <div class="section-header">
                 <span class="section-icon">🎯</span>
                 <div>
-                    <div class="section-title">Top 25 Midfielders - Expected Points (xPts)</div>
+                    <div class="section-title">Top 15 Midfielders - Expected Points (xPts)</div>
                     <div class="section-desc">xPts Model: 5×xG + 3×xA + 1×CS + MinPts + Bonus (adjusted for fixtures & playing time)</div>
                 </div>
             </div>
@@ -3595,7 +3595,7 @@ class FPLAnalyzer:
             <div class="section-header">
                 <span class="section-icon">⭐</span>
                 <div>
-                    <div class="section-title">Top 25 Forwards - Expected Points (xPts)</div>
+                    <div class="section-title">Top 15 Forwards - Expected Points (xPts)</div>
                     <div class="section-desc">xPts Model: 4×xG + 3×xA + MinPts + Bonus (adjusted for fixtures & playing time)</div>
                 </div>
             </div>
