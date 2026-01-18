@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FPL AI Analyzer - Registrering</title>
+    <title>FPL AI Analyzer - Avmelding</title>
     <style>
         * {
             margin: 0;
@@ -32,7 +32,7 @@
             margin-bottom: 30px;
         }
         .header h1 {
-            color: #1a365d;
+            color: #dc3545;
             font-size: 1.8em;
             margin-bottom: 10px;
         }
@@ -63,32 +63,24 @@
         }
         .form-group input:focus {
             outline: none;
-            border-color: #00ff87;
-        }
-        .form-group small {
-            display: block;
-            margin-top: 5px;
-            color: #888;
-            font-size: 0.85em;
-        }
-        .form-group small a {
-            color: #2b6cb0;
+            border-color: #dc3545;
         }
         .submit-btn {
             width: 100%;
             padding: 15px;
-            background: linear-gradient(135deg, #00ff87 0%, #00d4aa 100%);
+            background: #dc3545;
             border: none;
             border-radius: 10px;
-            color: #1a1a2e;
+            color: white;
             font-size: 1.1em;
             font-weight: bold;
             cursor: pointer;
             transition: transform 0.2s, box-shadow 0.2s;
         }
         .submit-btn:hover {
+            background: #c82333;
             transform: translateY(-2px);
-            box-shadow: 0 5px 20px rgba(0, 255, 135, 0.4);
+            box-shadow: 0 5px 20px rgba(220, 53, 69, 0.4);
         }
         .submit-btn:disabled {
             background: #ccc;
@@ -113,29 +105,16 @@
             color: #721c24;
             display: block;
         }
-        .features {
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px solid #eee;
-        }
-        .features h3 {
-            color: #333;
-            font-size: 1em;
-            margin-bottom: 15px;
+        .back-link {
             text-align: center;
+            margin-top: 20px;
         }
-        .features ul {
-            list-style: none;
+        .back-link a {
+            color: #007bff;
+            text-decoration: none;
         }
-        .features li {
-            padding: 8px 0;
-            color: #555;
-            font-size: 0.9em;
-        }
-        .features li::before {
-            content: "✓ ";
-            color: #00d4aa;
-            font-weight: bold;
+        .back-link a:hover {
+            text-decoration: underline;
         }
         .loading {
             display: none;
@@ -147,7 +126,7 @@
         }
         .spinner {
             border: 3px solid #f3f3f3;
-            border-top: 3px solid #00ff87;
+            border-top: 3px solid #dc3545;
             border-radius: 50%;
             width: 30px;
             height: 30px;
@@ -158,62 +137,56 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+        .warning-box {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        .warning-box p {
+            color: #856404;
+            font-size: 0.9em;
+            margin: 0;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <div class="logo">⚽</div>
-            <h1>FPL AI Analyzer</h1>
-            <p>Få ukentlige AI-drevne spilleranbefalinger</p>
+            <div class="logo">😢</div>
+            <h1>Meld deg av</h1>
+            <p>Vi er lei for at du vil forlate oss</p>
         </div>
         
-        <form id="registerForm">
-            <div class="form-group">
-                <label for="name">Navn</label>
-                <input type="text" id="name" name="name" required placeholder="Ditt navn">
-            </div>
-            
+        <div class="warning-box">
+            <p>⚠️ <strong>Advarsel:</strong> Denne handlingen er permanent. Alle dine data vil bli slettet og du vil ikke lenger motta FPL-rapporter.</p>
+        </div>
+        
+        <form id="unsubscribeForm">
             <div class="form-group">
                 <label for="email">E-post</label>
                 <input type="email" id="email" name="email" required placeholder="din@epost.no">
             </div>
             
-            <div class="form-group">
-                <label for="teamId">FPL Team ID</label>
-                <input type="number" id="teamId" name="teamId" required placeholder="F.eks. 1234567">
-                <small>Finn din Team ID i URL-en når du er logget inn på <a href="https://fantasy.premierleague.com" target="_blank">fantasy.premierleague.com</a></small>
-            </div>
-            
-            <button type="submit" class="submit-btn" id="submitBtn">Registrer meg</button>
+            <button type="submit" class="submit-btn" id="submitBtn">Meld meg av</button>
         </form>
         
         <div class="loading" id="loading">
             <div class="spinner"></div>
-            <p>Registrerer...</p>
+            <p>Sletter data...</p>
         </div>
         
         <div class="message" id="message"></div>
         
-        <div class="features">
-            <h3>Hva du får:</h3>
-            <ul>
-                <li>Ukentlig e-post med spilleranbefalinger</li>
-                <li>AI-analyse av alle Premier League-spillere</li>
-                <li>Personlig rapport for ditt lag</li>
-                <li>xPts-rangering for alle posisjoner</li>
-                <li>Fixture difficulty-analyse</li>
-            </ul>
-        </div>
-        
-        <div style="text-align: center; margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee;">
-            <a href="unsubscribe.html" style="color: #888; font-size: 0.85em; text-decoration: none;">Allerede registrert? Meld deg av her</a>
+        <div class="back-link">
+            <a href="register.html">← Tilbake til registrering</a>
         </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+        import { getFirestore, collection, query, where, getDocs, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
         
         // Firebase configuration
         const firebaseConfig = {
@@ -229,23 +202,14 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         
-        const form = document.getElementById('registerForm');
-        const submitBtn = document.getElementById('submitBtn');
+        const form = document.getElementById('unsubscribeForm');
         const loading = document.getElementById('loading');
         const message = document.getElementById('message');
         
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             
-            const name = document.getElementById('name').value.trim();
             const email = document.getElementById('email').value.trim().toLowerCase();
-            const teamId = parseInt(document.getElementById('teamId').value);
-            
-            // Validate team ID
-            if (isNaN(teamId) || teamId < 1) {
-                showMessage('Ugyldig Team ID. Vennligst sjekk og prøv igjen.', 'error');
-                return;
-            }
             
             // Show loading
             form.style.display = 'none';
@@ -253,27 +217,23 @@
             message.className = 'message';
             
             try {
-                // Check if email already exists
+                // Find subscriber by email
                 const q = query(collection(db, "subscribers"), where("email", "==", email));
                 const querySnapshot = await getDocs(q);
                 
-                if (!querySnapshot.empty) {
-                    showMessage('Denne e-postadressen er allerede registrert!', 'error');
+                if (querySnapshot.empty) {
+                    showMessage('Denne e-postadressen er ikke registrert.', 'error');
                     form.style.display = 'block';
                     loading.classList.remove('show');
                     return;
                 }
                 
-                // Add new subscriber
-                await addDoc(collection(db, "subscribers"), {
-                    name: name,
-                    email: email,
-                    team_id: teamId,
-                    registered_at: new Date().toISOString(),
-                    welcome_sent: false
-                });
+                // Delete all matching documents (should be only one)
+                for (const docSnapshot of querySnapshot.docs) {
+                    await deleteDoc(doc(db, "subscribers", docSnapshot.id));
+                }
                 
-                showMessage('🎉 Velkommen! Du vil motta din første rapport innen kort tid.', 'success');
+                showMessage('✅ Du er nå avmeldt. Alle dine data er slettet. Vi håper å se deg igjen!', 'success');
                 form.reset();
                 
             } catch (error) {
