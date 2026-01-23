@@ -185,11 +185,14 @@
                 <small>Finn din Team ID i URL-en når du er logget inn på <a href="https://fantasy.premierleague.com" target="_blank">fantasy.premierleague.com</a></small>
             </div>
             
-            <p style="font-size: 0.85em; color: #666; margin-bottom: 15px; text-align: center;">
-                Ved å registrere deg samtykker du til behandling av personopplysninger som beskrevet i <a href="personvern.html" target="_blank" style="color: #2b6cb0;">personvernerklæringen</a>.
-            </p>
+            <div class="form-group" style="display: flex; align-items: flex-start; gap: 10px;">
+                <input type="checkbox" id="consent" name="consent" required style="width: auto; margin-top: 4px; cursor: pointer;">
+                <label for="consent" style="font-weight: normal; font-size: 0.85em; color: #666; cursor: pointer;">
+                    Jeg samtykker til å motta e-poster med personlig analyse basert på mitt FPL-lag, og til behandling av personopplysninger som beskrevet i <a href="personvern.html" target="_blank" style="color: #2b6cb0;">personvernerklæringen</a>.
+                </label>
+            </div>
             
-            <button type="submit" class="submit-btn" id="submitBtn">Registrer meg</button>
+            <button type="submit" class="submit-btn" id="submitBtn" disabled>Registrer meg</button>
         </form>
         
         <div class="loading" id="loading">
@@ -237,6 +240,12 @@
         const submitBtn = document.getElementById('submitBtn');
         const loading = document.getElementById('loading');
         const message = document.getElementById('message');
+        const consentCheckbox = document.getElementById('consent');
+        
+        // Enable/disable submit button based on checkbox
+        consentCheckbox.addEventListener('change', () => {
+            submitBtn.disabled = !consentCheckbox.checked;
+        });
         
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
