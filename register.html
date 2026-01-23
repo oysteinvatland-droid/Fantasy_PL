@@ -304,6 +304,10 @@
                 });
                 
                 showMessage('🎉 Velkommen! Du vil motta din første rapport innen kort tid.', 'success');
+                if (!window.__leadTracked) {
+                    fbq('track', 'Lead');
+                    window.__leadTracked = true;
+                }
                 form.reset();
                 
             } catch (error) {
