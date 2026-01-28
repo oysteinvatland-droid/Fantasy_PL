@@ -2169,57 +2169,76 @@ class FPLAnalyzer:
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fantasy Premier League Recommendations</title>
+    <title>FPL Analyse</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
+        :root {{
+            --primary: #00ff87;
+            --primary-dark: #00d972;
+            --dark: #0d1117;
+            --darker: #010409;
+            --card-bg: #161b22;
+            --border: #30363d;
+            --text: #e6edf3;
+            --text-muted: #8b949e;
+        }}
         * {{
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }}
         body {{
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            font-family: 'Outfit', -apple-system, sans-serif;
+            background: var(--darker);
             min-height: 100vh;
             padding: 20px;
-            color: #ffffff;
+            color: var(--text);
+            line-height: 1.6;
         }}
         .container {{
-            max-width: 1400px;
+            max-width: 1200px;
             margin: 0 auto;
         }}
         .header {{
             text-align: center;
             padding: 40px 20px;
-            background: linear-gradient(135deg, #a8d4f0 0%, #d0e8f7 100%);
-            border-radius: 20px;
-            margin-bottom: 30px;
-            box-shadow: 0 10px 40px rgba(0, 100, 200, 0.2);
+            background: var(--card-bg);
+            border-radius: 16px;
+            margin-bottom: 24px;
+            border: 1px solid var(--border);
         }}
         .header h1 {{
-            font-size: 2.5em;
-            margin-bottom: 10px;
-            color: #1a365d;
-            text-shadow: none;
+            font-size: 2.2em;
+            margin-bottom: 8px;
+            color: var(--text);
+            font-weight: 800;
+        }}
+        .header h1 span {{
+            color: var(--primary);
         }}
         .header .subtitle {{
-            font-size: 1.2em;
-            color: #2c5282;
+            font-size: 1.1em;
+            color: var(--text-muted);
         }}
         .deadline-box {{
-            background: linear-gradient(135deg, #ff6b6b 0%, #feca57 100%);
-            border-radius: 15px;
+            background: var(--card-bg);
+            border-radius: 16px;
             padding: 20px;
-            margin-bottom: 30px;
+            margin-bottom: 24px;
             text-align: center;
-            box-shadow: 0 5px 20px rgba(255, 107, 107, 0.3);
+            border: 1px solid var(--primary);
         }}
         .deadline-box h2 {{
             font-size: 1.5em;
             margin-bottom: 10px;
+            color: var(--primary);
         }}
         .deadline-box .time {{
             font-size: 2em;
             font-weight: bold;
+            color: var(--text);
         }}
         .deadline-box.urgent {{
             animation: pulse 1s infinite;
@@ -2229,42 +2248,44 @@ class FPLAnalyzer:
             50% {{ transform: scale(1.02); }}
         }}
         .section {{
-            background: #d0e8f7;
-            border-radius: 15px;
-            padding: 25px;
-            margin-bottom: 25px;
-            border: 1px solid #a0c4e0;
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+            border: 1px solid var(--border);
         }}
         .section-header {{
             display: flex;
             align-items: center;
             gap: 15px;
             margin-bottom: 20px;
-            padding-bottom: 15px;
-            border-bottom: 2px solid #4a90c2;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border);
         }}
         .section-icon {{
             font-size: 2em;
         }}
         .section-title {{
-            font-size: 1.5em;
-            color: #1a365d;
-            font-weight: bold;
+            font-size: 1.4em;
+            color: var(--text);
+            font-weight: 700;
         }}
         .section-desc {{
-            font-size: 0.9em;
-            color: #2d3748;
-            margin-top: 5px;
+            font-size: 0.85em;
+            color: var(--text-muted);
+            margin-top: 4px;
         }}
         table {{
             width: 100%;
             border-collapse: collapse;
             font-size: 0.9em;
-            background: #e8e8e8;
+            background: var(--dark);
+            border-radius: 12px;
+            overflow: hidden;
         }}
         th {{
-            background: #4a90c2;
-            color: #ffffff;
+            background: var(--border);
+            color: var(--text);
             padding: 12px 8px;
             text-align: left;
             font-weight: 600;
@@ -2273,40 +2294,39 @@ class FPLAnalyzer:
         }}
         td {{
             padding: 10px 8px;
-            border-bottom: 1px solid #c0c0c0;
-            color: #1a1a1a;
-            background: #f5f5f5;
+            border-bottom: 1px solid var(--border);
+            color: var(--text);
+            background: var(--dark);
         }}
         tr:hover td {{
-            background: #ddeeff;
+            background: rgba(0, 255, 135, 0.05);
         }}
-        tr:nth-child(1) td {{ background: rgba(255, 215, 0, 0.35); }}
-        tr:nth-child(2) td {{ background: rgba(192, 192, 192, 0.4); }}
-        tr:nth-child(3) td {{ background: rgba(205, 127, 50, 0.3); }}
+        tr:nth-child(1) td {{ background: rgba(255, 215, 0, 0.15); }}
+        tr:nth-child(2) td {{ background: rgba(192, 192, 192, 0.1); }}
+        tr:nth-child(3) td {{ background: rgba(205, 127, 50, 0.1); }}
         .rank {{
             font-weight: bold;
-            color: #1a365d;
+            color: var(--text-muted);
         }}
         .player-name {{
             font-weight: 600;
-            color: #000000;
+            color: var(--text);
         }}
         .team-badge {{
-            background: #ffffff;
-            color: #2d3748;
+            background: var(--border);
+            color: var(--text-muted);
             padding: 3px 8px;
             border-radius: 5px;
             font-size: 0.85em;
             font-weight: 600;
-            border: 1px solid #cbd5e0;
         }}
         .price {{
-            color: #2b6cb0;
+            color: var(--primary);
             font-weight: 600;
         }}
         .score {{
-            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
-            color: #ffffff;
+            background: var(--primary);
+            color: var(--dark);
             padding: 5px 10px;
             border-radius: 8px;
             font-weight: bold;
@@ -2314,14 +2334,15 @@ class FPLAnalyzer:
         .footer {{
             text-align: center;
             padding: 30px;
-            color: #718096;
+            color: var(--text-muted);
             font-size: 0.9em;
         }}
         .highlight-box {{
-            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
-            border-radius: 15px;
+            background: var(--card-bg);
+            border-radius: 16px;
             padding: 20px;
-            margin-bottom: 25px;
+            margin-bottom: 24px;
+            border: 1px solid rgba(255, 107, 107, 0.3);
         }}
         .highlight-box h3 {{
             margin-bottom: 15px;
@@ -2347,8 +2368,8 @@ class FPLAnalyzer:
 <body>
     <div class="container">
         <div class="header">
-            <h1>⚽ Fantasy Premier League</h1>
-            <div class="subtitle">AI-Powered Player Recommendations</div>
+            <h1>⚽ FPL <span>Analyse</span></h1>
+            <div class="subtitle">AI-drevet innsikt og anbefalinger for ditt lag</div>
         </div>
         
         {deadline_html}
@@ -2404,9 +2425,9 @@ class FPLAnalyzer:
         </div>
         
         <div class="footer">
-            <p>Generated by FPL Analyzer • Data from Fantasy Premier League API</p>
-            <p>Report generated: {datetime.now().strftime('%Y-%m-%d %H:%M')}</p>
-            <p style="margin-top: 15px;"><a href="https://oysteinvatland-droid.github.io/Fantasy_PL/unsubscribe.html" style="color: #888; font-size: 0.85em;">Meld deg av tjenesten</a></p>
+            <p>FPL Analyse • AI-drevet innsikt for Fantasy Premier League</p>
+            <p>Rapport generert: {datetime.now().strftime('%d.%m.%Y kl. %H:%M')}</p>
+            <p style="margin-top: 15px;"><a href="https://fplanalyse.no/unsubscribe.html">Meld deg av tjenesten</a></p>
         </div>
     </div>
 </body>
@@ -3308,36 +3329,59 @@ class FPLAnalyzer:
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FPL Report - {subscriber_name}</title>
+    <title>FPL Analyse - {subscriber_name}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
+        :root {{
+            --primary: #00ff87;
+            --primary-dark: #00d972;
+            --dark: #0d1117;
+            --darker: #010409;
+            --card-bg: #161b22;
+            --border: #30363d;
+            --text: #e6edf3;
+            --text-muted: #8b949e;
+        }}
         * {{
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }}
         body {{
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #1a1a2e;
+            font-family: 'Outfit', -apple-system, sans-serif;
+            background: var(--darker);
             min-height: 100vh;
             padding: 20px;
-            color: #ffffff;
+            color: var(--text);
+            line-height: 1.6;
         }}
         .container {{
-            max-width: 1400px;
+            max-width: 1200px;
             margin: 0 auto;
         }}
         .header {{
             text-align: center;
             padding: 40px 20px;
-            background: linear-gradient(135deg, #a8d4f0 0%, #d0e8f7 100%);
-            border-radius: 20px;
-            margin-bottom: 30px;
-            box-shadow: 0 10px 40px rgba(0, 100, 200, 0.2);
+            background: var(--card-bg);
+            border-radius: 16px;
+            margin-bottom: 24px;
+            border: 1px solid var(--border);
         }}
         .header h1 {{
-            font-size: 2.5em;
-            margin-bottom: 10px;
-            color: #1a365d;
+            font-size: 2.2em;
+            margin-bottom: 8px;
+            color: var(--text);
+            font-weight: 800;
+        }}
+        .header h1 span {{
+            color: var(--primary);
+        }}
+        .header .subtitle {{
+            font-size: 1.1em;
+            color: var(--text-muted);
+        }}
             text-shadow: none;
         }}
         .header .subtitle {{
@@ -3345,19 +3389,19 @@ class FPLAnalyzer:
             color: #2c5282;
         }}
         .combined-greeting-deadline {{
-            background: #d4edda;
-            border-radius: 15px;
-            padding: 25px;
-            margin-bottom: 30px;
-            color: #000;
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+            border: 1px solid var(--border);
         }}
         .greeting-row {{
-            margin-bottom: 15px;
+            margin-bottom: 16px;
         }}
         .greeting-text {{
             font-size: 1.4em;
-            font-weight: bold;
-            color: #1a5928;
+            font-weight: 700;
+            color: var(--primary);
         }}
         .deadline-row {{
             display: flex;
@@ -3365,8 +3409,8 @@ class FPLAnalyzer:
             align-items: center;
             flex-wrap: wrap;
             gap: 15px;
-            padding-top: 15px;
-            border-top: 2px solid rgba(0,0,0,0.1);
+            padding-top: 16px;
+            border-top: 1px solid var(--border);
         }}
         .deadline-info {{
             display: flex;
@@ -3380,101 +3424,102 @@ class FPLAnalyzer:
             flex: 1;
         }}
         .deadline-title {{
-            font-size: 1.1em;
-            font-weight: bold;
-            color: #1a5928;
+            font-size: 1em;
+            font-weight: 600;
+            color: var(--text-muted);
         }}
         .deadline-time {{
             font-size: 1.8em;
-            font-weight: bold;
-            color: #c0392b;
+            font-weight: 800;
+            color: var(--primary);
         }}
         .deadline-date {{
-            font-size: 0.95em;
-            color: #2d6a3d;
+            font-size: 0.9em;
+            color: var(--text-muted);
         }}
         .deadline-warning {{
-            background: #f8d7da;
-            color: #721c24;
+            background: rgba(255, 107, 107, 0.2);
+            color: #ff6b6b;
             padding: 10px 20px;
             border-radius: 10px;
-            font-weight: bold;
+            font-weight: 600;
+            border: 1px solid rgba(255, 107, 107, 0.3);
         }}
         .personal-greeting {{
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 15px;
+            background: var(--card-bg);
+            border-radius: 16px;
             padding: 20px;
-            margin-bottom: 30px;
+            margin-bottom: 24px;
             text-align: center;
             font-size: 1.3em;
+            border: 1px solid var(--border);
         }}
         .deadline-box {{
-            background: linear-gradient(135deg, #ff6b6b 0%, #feca57 100%);
-            border-radius: 15px;
+            background: var(--card-bg);
+            border-radius: 16px;
             padding: 20px;
-            margin-bottom: 30px;
+            margin-bottom: 24px;
             text-align: center;
-            color: #1a1a2e;
-            font-weight: bold;
+            border: 1px solid var(--primary);
         }}
         .section {{
-            background: #d0e8f7;
-            border-radius: 15px;
-            padding: 25px;
-            margin-bottom: 25px;
-            border: 1px solid #a0c4e0;
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+            border: 1px solid var(--border);
         }}
         .section-header {{
             display: flex;
             align-items: center;
             gap: 15px;
             margin-bottom: 20px;
-            padding-bottom: 15px;
-            border-bottom: 2px solid #4a90c2;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border);
         }}
         .section-icon {{
             font-size: 2em;
         }}
         .section-title {{
-            font-size: 1.5em;
-            font-weight: bold;
-            color: #1a365d;
+            font-size: 1.4em;
+            font-weight: 700;
+            color: var(--text);
         }}
         .section-desc {{
-            font-size: 0.9em;
-            color: #2d3748;
-            margin-top: 5px;
+            font-size: 0.85em;
+            color: var(--text-muted);
+            margin-top: 4px;
         }}
         table {{
             width: 100%;
             border-collapse: collapse;
-            background: #e8e8e8;
-            border-radius: 10px;
+            background: var(--dark);
+            border-radius: 12px;
             overflow: hidden;
         }}
         th {{
-            background: #4a90c2;
-            color: #ffffff;
+            background: var(--border);
+            color: var(--text);
             padding: 12px 8px;
             text-align: left;
             font-weight: 600;
-            font-size: 0.85em;
+            font-size: 0.8em;
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }}
         td {{
             padding: 10px 8px;
-            border-bottom: 1px solid #c0c0c0;
+            border-bottom: 1px solid var(--border);
             font-size: 0.9em;
-            color: #1a1a1a;
-            background: #f5f5f5;
+            color: var(--text);
+            background: var(--dark);
         }}
         tr:hover td {{
-            background: #ddeeff;
+            background: rgba(0, 255, 135, 0.05);
         }}
-        tr:nth-child(1) td {{ background: rgba(255, 215, 0, 0.35); }}
-        tr:nth-child(2) td {{ background: rgba(192, 192, 192, 0.4); }}
-        tr:nth-child(3) td {{ background: rgba(205, 127, 50, 0.3); }}
+        tr:nth-child(1) td {{ background: rgba(255, 215, 0, 0.15); }}
+        tr:nth-child(2) td {{ background: rgba(192, 192, 192, 0.1); }}
+        tr:nth-child(3) td {{ background: rgba(205, 127, 50, 0.1); }}
         .medal {{
             display: inline-block;
             width: 28px;
@@ -3485,10 +3530,10 @@ class FPLAnalyzer:
             font-weight: bold;
             font-size: 0.9em;
         }}
-        .gold {{ background: linear-gradient(135deg, #ffd700 0%, #ffb800 100%); color: #1a1a2e; }}
-        .silver {{ background: linear-gradient(135deg, #c0c0c0 0%, #a8a8a8 100%); color: #1a1a2e; }}
-        .bronze {{ background: linear-gradient(135deg, #cd7f32 0%, #b87333 100%); color: #1a1a2e; }}
-        .rank {{ color: #4a5568; font-weight: bold; }}
+        .gold {{ background: linear-gradient(135deg, #ffd700 0%, #ffb800 100%); color: var(--dark); }}
+        .silver {{ background: linear-gradient(135deg, #c0c0c0 0%, #a8a8a8 100%); color: var(--dark); }}
+        .bronze {{ background: linear-gradient(135deg, #cd7f32 0%, #b87333 100%); color: var(--dark); }}
+        .rank {{ color: var(--text-muted); font-weight: bold; }}
         .pos-badge {{
             display: inline-block;
             padding: 3px 8px;
@@ -3496,26 +3541,25 @@ class FPLAnalyzer:
             font-size: 0.8em;
             font-weight: bold;
         }}
-        .pos-gkp {{ background: #ebff00; color: #1a1a2e; }}
-        .pos-def {{ background: #00ff87; color: #1a1a2e; }}
-        .pos-mid {{ background: #05f0ff; color: #1a1a2e; }}
+        .pos-gkp {{ background: #ebff00; color: var(--dark); }}
+        .pos-def {{ background: var(--primary); color: var(--dark); }}
+        .pos-mid {{ background: #05f0ff; color: var(--dark); }}
         .pos-fwd {{ background: #e90052; color: #ffffff; }}
         .player-name {{
             font-weight: 600;
-            color: #000000;
+            color: var(--text);
         }}
         .team-badge {{
-            background: #ffffff;
-            color: #2d3748;
+            background: var(--border);
+            color: var(--text-muted);
             padding: 3px 8px;
             border-radius: 5px;
             font-size: 0.85em;
-            border: 1px solid #cbd5e0;
         }}
-        .price {{ color: #2b6cb0; font-weight: 600; }}
+        .price {{ color: var(--primary); font-weight: 600; }}
         .score {{
-            background: linear-gradient(135deg, #00ff87 0%, #00d4aa 100%);
-            color: #1a1a2e;
+            background: var(--primary);
+            color: var(--dark);
             padding: 5px 10px;
             border-radius: 8px;
             font-weight: bold;
@@ -3523,20 +3567,28 @@ class FPLAnalyzer:
         .footer {{
             text-align: center;
             padding: 30px;
-            color: rgba(255, 255, 255, 0.5);
+            color: var(--text-muted);
             font-size: 0.9em;
         }}
-        .dream-team-section {{
-            background: linear-gradient(135deg, #ffd700 0%, #ff8c00 100%);
+        .footer a {{
+            color: var(--text-muted);
+            text-decoration: none;
         }}
-        .dream-team-section .section-title {{ color: #1a1a2e; }}
-        .dream-team-section .section-desc {{ color: #333; }}
-        .dream-team-section table {{ background: rgba(255,255,255,0.95); }}
-        .dream-team-section th {{ background: #1a1a2e !important; color: white !important; }}
-        .dream-team-section td {{ color: #333; }}
+        .footer a:hover {{
+            color: var(--primary);
+        }}
+        .dream-team-section {{
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.1) 0%, rgba(255, 140, 0, 0.1) 100%);
+            border: 1px solid rgba(255, 215, 0, 0.3);
+        }}
+        .dream-team-section .section-title {{ color: #ffd700; }}
+        .dream-team-section .section-desc {{ color: var(--text-muted); }}
+        .dream-team-section table {{ background: var(--dark); }}
+        .dream-team-section th {{ background: rgba(255, 215, 0, 0.2) !important; color: #ffd700 !important; }}
+        .dream-team-section td {{ color: var(--text); }}
         .xpts-badge {{
-            background: linear-gradient(135deg, #00ff87 0%, #00d4aa 100%);
-            color: #1a1a2e;
+            background: var(--primary);
+            color: var(--dark);
             padding: 3px 8px;
             border-radius: 5px;
             font-weight: bold;
@@ -3546,8 +3598,8 @@ class FPLAnalyzer:
 <body>
     <div class="container">
         <div class="header">
-            <h1>⚽ Fantasy Premier League</h1>
-            <div class="subtitle">Ukentlig Spilleranalyse & Anbefalinger</div>
+            <h1>⚽ FPL <span>Analyse</span></h1>
+            <div class="subtitle">AI-drevet innsikt og anbefalinger for ditt lag</div>
         </div>
         
         {combined_greeting_html}
@@ -3603,9 +3655,9 @@ class FPLAnalyzer:
         </div>
         
         <div class="footer">
-            <p>Generated by FPL Analyzer • Data from Fantasy Premier League API</p>
-            <p>Report generated: {datetime.now().strftime('%Y-%m-%d %H:%M')}</p>
-            <p style="margin-top: 15px;"><a href="https://oysteinvatland-droid.github.io/Fantasy_PL/unsubscribe.html" style="color: #888; font-size: 0.85em;">Meld deg av tjenesten</a></p>
+            <p>FPL Analyse • AI-drevet innsikt for Fantasy Premier League</p>
+            <p>Rapport generert: {datetime.now().strftime('%d.%m.%Y kl. %H:%M')}</p>
+            <p style="margin-top: 15px;"><a href="https://fplanalyse.no/unsubscribe.html">Meld deg av tjenesten</a></p>
         </div>
     </div>
 </body>
