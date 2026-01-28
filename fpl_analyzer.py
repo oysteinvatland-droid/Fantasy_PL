@@ -2505,10 +2505,10 @@ class FPLAnalyzer:
             if neste_gw is None:
                 # Returner bare greeting uten deadline
                 return f'''
-                <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #d4edda; border-radius: 15px; margin-bottom: 30px;">
+                <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #161b22; border-radius: 16px; margin-bottom: 24px; border: 1px solid #30363d;">
                     <tr>
                         <td style="padding: 25px;">
-                            <div style="font-size: 1.4em; font-weight: bold; color: #1a5928;">👋 Hei {subscriber_name}! Her er din personlige FPL-rapport</div>
+                            <div style="font-size: 1.4em; font-weight: bold; color: #00ff87;">👋 Hei {subscriber_name}! Her er din personlige FPL-rapport</div>
                         </td>
                     </tr>
                 </table>'''
@@ -2531,30 +2531,30 @@ class FPLAnalyzer:
                     
                     warning_html = ""
                     if dager == 0 and timer < 6:
-                        warning_html = '<td style="vertical-align: middle;"><div style="background-color: #f8d7da; color: #721c24; padding: 10px 20px; border-radius: 10px; font-weight: bold;">⚠️ Bare noen timer igjen!</div></td>'
+                        warning_html = '<td style="vertical-align: middle;"><div style="background-color: rgba(255,107,107,0.2); color: #ff6b6b; padding: 10px 20px; border-radius: 10px; font-weight: bold; border: 1px solid rgba(255,107,107,0.3);">⚠️ Bare noen timer igjen!</div></td>'
                     elif deadline_date == today_date:
-                        warning_html = '<td style="vertical-align: middle;"><div style="background-color: #f8d7da; color: #721c24; padding: 10px 20px; border-radius: 10px; font-weight: bold;">⚠️ Deadline er i dag!</div></td>'
+                        warning_html = '<td style="vertical-align: middle;"><div style="background-color: rgba(255,107,107,0.2); color: #ff6b6b; padding: 10px 20px; border-radius: 10px; font-weight: bold; border: 1px solid rgba(255,107,107,0.3);">⚠️ Deadline er i dag!</div></td>'
                     elif deadline_date == tomorrow_date:
-                        warning_html = '<td style="vertical-align: middle;"><div style="background-color: #fff3cd; color: #856404; padding: 10px 20px; border-radius: 10px; font-weight: bold;">📅 Deadline er i morgen!</div></td>'
+                        warning_html = '<td style="vertical-align: middle;"><div style="background-color: rgba(255,193,7,0.2); color: #ffc107; padding: 10px 20px; border-radius: 10px; font-weight: bold; border: 1px solid rgba(255,193,7,0.3);">📅 Deadline er i morgen!</div></td>'
                     
                     return f'''
-                    <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #d4edda; border-radius: 15px; margin-bottom: 30px;">
+                    <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #161b22; border-radius: 16px; margin-bottom: 24px; border: 1px solid #30363d;">
                         <tr>
                             <td style="padding: 25px;">
                                 <!-- Greeting -->
-                                <div style="font-size: 1.4em; font-weight: bold; color: #1a5928; margin-bottom: 15px;">👋 Hei {subscriber_name}!</div>
+                                <div style="font-size: 1.4em; font-weight: bold; color: #00ff87; margin-bottom: 15px;">👋 Hei {subscriber_name}!</div>
                                 
                                 <!-- Deadline row -->
-                                <table width="100%" cellpadding="0" cellspacing="0" style="border-top: 2px solid rgba(0,0,0,0.1); padding-top: 15px;">
+                                <table width="100%" cellpadding="0" cellspacing="0" style="border-top: 1px solid #30363d; padding-top: 15px;">
                                     <tr>
                                         <td style="vertical-align: middle; padding-top: 15px;">
                                             <table cellpadding="0" cellspacing="0">
                                                 <tr>
                                                     <td style="font-size: 2.5em; vertical-align: middle; padding-right: 15px;">⏰</td>
                                                     <td style="vertical-align: middle;">
-                                                        <div style="font-size: 1.1em; font-weight: bold; color: #1a5928;">Gameweek {neste_gw.get('id', '?')} Deadline</div>
-                                                        <div style="font-size: 1.8em; font-weight: bold; color: #c0392b;">{dager}d {timer}t {minutter}m</div>
-                                                        <div style="font-size: 0.95em; color: #2d6a3d;">{deadline.strftime('%A %d. %B %H:%M')}</div>
+                                                        <div style="font-size: 1.1em; font-weight: bold; color: #8b949e;">Gameweek {neste_gw.get('id', '?')} Deadline</div>
+                                                        <div style="font-size: 1.8em; font-weight: bold; color: #00ff87;">{dager}d {timer}t {minutter}m</div>
+                                                        <div style="font-size: 0.95em; color: #8b949e;">{deadline.strftime('%A %d. %B %H:%M')}</div>
                                                     </td>
                                                 </tr>
                                             </table>
@@ -2569,10 +2569,10 @@ class FPLAnalyzer:
             pass
         
         return f'''
-        <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #d4edda; border-radius: 15px; margin-bottom: 30px;">
+        <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #161b22; border-radius: 16px; margin-bottom: 24px; border: 1px solid #30363d;">
             <tr>
                 <td style="padding: 25px;">
-                    <div style="font-size: 1.4em; font-weight: bold; color: #1a5928;">👋 Hei {subscriber_name}! Her er din personlige FPL-rapport</div>
+                    <div style="font-size: 1.4em; font-weight: bold; color: #00ff87;">👋 Hei {subscriber_name}! Her er din personlige FPL-rapport</div>
                 </td>
             </tr>
         </table>'''
@@ -2629,33 +2629,33 @@ class FPLAnalyzer:
                 
                 rows_html += f'''
                 <tr>
-                    <td style="padding: 12px 8px; border-bottom: 1px solid #e0e0e0;"><span style="{pos_style} padding: 3px 8px; border-radius: 5px; font-size: 0.8em; font-weight: bold;">{row['pos']}</span></td>
-                    <td style="padding: 12px 8px; border-bottom: 1px solid #e0e0e0; font-weight: 600; color: #000;">{row['web_name']}</td>
-                    <td style="padding: 12px 8px; border-bottom: 1px solid #e0e0e0;"><span style="background-color: #e8e8e8; padding: 2px 6px; border-radius: 4px; font-size: 0.85em;">{team_name}</span></td>
-                    <td style="padding: 12px 8px; border-bottom: 1px solid #e0e0e0; color: #1a5928; font-weight: 600;">£{row['pris_mill']:.1f}m</td>
-                    <td style="padding: 12px 8px; border-bottom: 1px solid #e0e0e0; font-weight: bold; color: #1a5928;">{row['xPts_adjusted']:.2f}</td>
-                    <td style="padding: 12px 8px; border-bottom: 1px solid #e0e0e0; font-weight: bold; color: #e74c3c;">{row['value']:.2f}</td>
+                    <td style="padding: 12px 8px; border-bottom: 1px solid #30363d; background-color: #0d1117;"><span style="{pos_style} padding: 3px 8px; border-radius: 5px; font-size: 0.8em; font-weight: bold;">{row['pos']}</span></td>
+                    <td style="padding: 12px 8px; border-bottom: 1px solid #30363d; background-color: #0d1117; font-weight: 600; color: #e6edf3;">{row['web_name']}</td>
+                    <td style="padding: 12px 8px; border-bottom: 1px solid #30363d; background-color: #0d1117;"><span style="background-color: #30363d; color: #8b949e; padding: 2px 6px; border-radius: 4px; font-size: 0.85em;">{team_name}</span></td>
+                    <td style="padding: 12px 8px; border-bottom: 1px solid #30363d; background-color: #0d1117; color: #00ff87; font-weight: 600;">£{row['pris_mill']:.1f}m</td>
+                    <td style="padding: 12px 8px; border-bottom: 1px solid #30363d; background-color: #0d1117; font-weight: bold; color: #00ff87;">{row['xPts_adjusted']:.2f}</td>
+                    <td style="padding: 12px 8px; border-bottom: 1px solid #30363d; background-color: #0d1117; font-weight: bold; color: #ffd700;">{row['value']:.2f}</td>
                 </tr>'''
             
             html = f'''
-        <table width="100%" cellpadding="0" cellspacing="0" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); border-radius: 20px; margin-bottom: 25px;">
+        <table width="100%" cellpadding="0" cellspacing="0" style="background: linear-gradient(135deg, rgba(0,255,135,0.1) 0%, rgba(0,217,114,0.1) 100%); border-radius: 16px; margin-bottom: 24px; border: 1px solid rgba(0,255,135,0.3);">
             <tr>
                 <td style="padding: 25px;">
                     <div style="margin-bottom: 20px;">
                         <span style="font-size: 2em; margin-right: 15px;">💰</span>
-                        <span style="font-size: 1.5em; font-weight: bold; color: #fff;">Beste Value for Money</span>
-                        <div style="color: rgba(255,255,255,0.8); font-size: 0.9em; margin-top: 5px; margin-left: 55px;">Høyest xPts per million (xPts/£m) per posisjon</div>
+                        <span style="font-size: 1.5em; font-weight: bold; color: #00ff87;">Beste Value for Money</span>
+                        <div style="color: #8b949e; font-size: 0.9em; margin-top: 5px; margin-left: 55px;">Høyest xPts per million (xPts/£m) per posisjon</div>
                     </div>
                     
-                    <table width="100%" cellpadding="0" cellspacing="0" style="background: rgba(255,255,255,0.95); border-radius: 12px; border-collapse: collapse;">
+                    <table width="100%" cellpadding="0" cellspacing="0" style="background: #0d1117; border-radius: 12px; border-collapse: collapse;">
                         <thead>
                             <tr>
-                                <th style="background-color: #1a1a2e; color: white; padding: 12px 8px; text-align: left; font-weight: 600;">Pos</th>
-                                <th style="background-color: #1a1a2e; color: white; padding: 12px 8px; text-align: left; font-weight: 600;">Spiller</th>
-                                <th style="background-color: #1a1a2e; color: white; padding: 12px 8px; text-align: left; font-weight: 600;">Lag</th>
-                                <th style="background-color: #1a1a2e; color: white; padding: 12px 8px; text-align: left; font-weight: 600;">Pris</th>
-                                <th style="background-color: #1a1a2e; color: white; padding: 12px 8px; text-align: left; font-weight: 600;">xPts</th>
-                                <th style="background-color: #1a1a2e; color: white; padding: 12px 8px; text-align: left; font-weight: 600;">xPts/£m</th>
+                                <th style="background-color: #30363d; color: #e6edf3; padding: 12px 8px; text-align: left; font-weight: 600;">Pos</th>
+                                <th style="background-color: #30363d; color: #e6edf3; padding: 12px 8px; text-align: left; font-weight: 600;">Spiller</th>
+                                <th style="background-color: #30363d; color: #e6edf3; padding: 12px 8px; text-align: left; font-weight: 600;">Lag</th>
+                                <th style="background-color: #30363d; color: #e6edf3; padding: 12px 8px; text-align: left; font-weight: 600;">Pris</th>
+                                <th style="background-color: #30363d; color: #e6edf3; padding: 12px 8px; text-align: left; font-weight: 600;">xPts</th>
+                                <th style="background-color: #30363d; color: #e6edf3; padding: 12px 8px; text-align: left; font-weight: 600;">xPts/£m</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -2830,34 +2830,36 @@ class FPLAnalyzer:
         
         <style>
             .dream-team-section {{
-                background: linear-gradient(135deg, #ffd700 0%, #ff8c00 100%);
-                border: none;
+                background: linear-gradient(135deg, rgba(255, 215, 0, 0.1) 0%, rgba(255, 140, 0, 0.1) 100%);
+                border: 1px solid rgba(255, 215, 0, 0.3);
             }}
             .dream-team-section .section-title {{
-                color: #1a1a2e;
+                color: #ffd700;
             }}
             .dream-team-section .section-desc {{
-                color: #333;
+                color: #8b949e;
             }}
             .dream-team-section table {{
-                background: rgba(255,255,255,0.95);
+                background: #0d1117;
             }}
             .dream-team-section th {{
-                background: #1a1a2e !important;
-                color: white !important;
+                background: rgba(255, 215, 0, 0.2) !important;
+                color: #ffd700 !important;
             }}
             .dream-team-section td {{
-                color: #333;
+                color: #e6edf3;
+                background: #0d1117;
             }}
             .dream-team-section .total-row {{
-                background: #f0f0f0;
+                background: #161b22;
             }}
             .dream-team-section .total-row td {{
-                border-top: 2px solid #1a1a2e;
+                border-top: 1px solid #ffd700;
+                background: #161b22;
             }}
             .xpts-badge {{
-                background: linear-gradient(135deg, #00ff87 0%, #00d4aa 100%);
-                color: #1a1a2e;
+                background: #00ff87;
+                color: #0d1117;
                 padding: 3px 8px;
                 border-radius: 5px;
                 font-weight: bold;
@@ -3008,22 +3010,22 @@ class FPLAnalyzer:
                 
                 # Rank farger
                 rank_colors = {
-                    'rank-gold': 'color: #b8860b; font-weight: bold;',
-                    'rank-silver': 'color: #666; font-weight: bold;',
+                    'rank-gold': 'color: #ffd700; font-weight: bold;',
+                    'rank-silver': 'color: #c0c0c0; font-weight: bold;',
                     'rank-bronze': 'color: #cd7f32; font-weight: bold;',
-                    'rank-normal': 'color: #888;',
-                    'rank-na': 'color: #ccc;'
+                    'rank-normal': 'color: #8b949e;',
+                    'rank-na': 'color: #484f58;'
                 }
                 rank_style = rank_colors.get(rank_class, 'color: #888;')
                 
                 row_html = f'''
                 <tr>
-                    <td style="padding: 10px 8px; border-bottom: 1px solid #e0e0e0;"><span style="{pos_style} padding: 3px 8px; border-radius: 5px; font-size: 0.8em; font-weight: bold;">{pos_type}</span></td>
-                    <td style="padding: 10px 8px; border-bottom: 1px solid #e0e0e0; font-weight: 600; color: #000;">{name}{captain_mark}</td>
-                    <td style="padding: 10px 8px; border-bottom: 1px solid #e0e0e0;"><span style="background-color: #e8e8e8; padding: 2px 6px; border-radius: 4px; font-size: 0.85em;">{team}</span></td>
-                    <td style="padding: 10px 8px; border-bottom: 1px solid #e0e0e0; color: #1a5928; font-weight: 600;">£{price:.1f}m</td>
-                    <td style="padding: 10px 8px; border-bottom: 1px solid #e0e0e0;"><span style="{rank_style}">{rank_text}</span></td>
-                    <td style="padding: 10px 8px; border-bottom: 1px solid #e0e0e0; font-weight: bold; color: #1a5928;">{score_text}</td>
+                    <td style="padding: 10px 8px; border-bottom: 1px solid #30363d; background-color: #0d1117;"><span style="{pos_style} padding: 3px 8px; border-radius: 5px; font-size: 0.8em; font-weight: bold;">{pos_type}</span></td>
+                    <td style="padding: 10px 8px; border-bottom: 1px solid #30363d; background-color: #0d1117; font-weight: 600; color: #e6edf3;">{name}{captain_mark}</td>
+                    <td style="padding: 10px 8px; border-bottom: 1px solid #30363d; background-color: #0d1117;"><span style="background-color: #30363d; color: #8b949e; padding: 2px 6px; border-radius: 4px; font-size: 0.85em;">{team}</span></td>
+                    <td style="padding: 10px 8px; border-bottom: 1px solid #30363d; background-color: #0d1117; color: #00ff87; font-weight: 600;">£{price:.1f}m</td>
+                    <td style="padding: 10px 8px; border-bottom: 1px solid #30363d; background-color: #0d1117;"><span style="{rank_style}">{rank_text}</span></td>
+                    <td style="padding: 10px 8px; border-bottom: 1px solid #30363d; background-color: #0d1117; font-weight: bold; color: #00ff87;">{score_text}</td>
                 </tr>'''
                 
                 if position <= 11:
@@ -3045,16 +3047,16 @@ class FPLAnalyzer:
             captain_html = ""
             if best_captain:
                 captain_html = f'''
-                    <div style="background-color: #fff3cd; border-radius: 12px; padding: 15px; margin-bottom: 15px;">
-                        <div style="font-size: 1.1em; font-weight: bold; color: #856404; margin-bottom: 10px;">👑 Anbefalt Kaptein</div>
+                    <div style="background-color: rgba(255,215,0,0.1); border: 1px solid rgba(255,215,0,0.3); border-radius: 12px; padding: 15px; margin-bottom: 15px;">
+                        <div style="font-size: 1.1em; font-weight: bold; color: #ffd700; margin-bottom: 10px;">👑 Anbefalt Kaptein</div>
                         <table width="100%" cellpadding="0" cellspacing="0">
                             <tr>
                                 <td style="vertical-align: middle;">
-                                    <span style="font-size: 1.4em; font-weight: bold; color: #1a1a2e;">{best_captain['name']}</span>
-                                    <span style="background-color: #e8e8e8; padding: 2px 8px; border-radius: 4px; font-size: 0.85em; margin-left: 10px;">{best_captain['team']}</span>
+                                    <span style="font-size: 1.4em; font-weight: bold; color: #e6edf3;">{best_captain['name']}</span>
+                                    <span style="background-color: #30363d; color: #8b949e; padding: 2px 8px; border-radius: 4px; font-size: 0.85em; margin-left: 10px;">{best_captain['team']}</span>
                                 </td>
                                 <td align="right" style="vertical-align: middle;">
-                                    <span style="background-color: #28a745; color: white; padding: 8px 15px; border-radius: 8px; font-weight: bold;">xPts: {best_captain['score']:.2f}</span>
+                                    <span style="background-color: #00ff87; color: #0d1117; padding: 8px 15px; border-radius: 8px; font-weight: bold;">xPts: {best_captain['score']:.2f}</span>
                                 </td>
                             </tr>
                         </table>
@@ -3121,32 +3123,32 @@ class FPLAnalyzer:
                 for i, tr in enumerate(transfer_recommendations[:3], 1):
                     transfer_rows += f'''
                         <tr>
-                            <td style="padding: 12px 8px; border-bottom: 1px solid #e0e0e0; vertical-align: middle;">
-                                <span style="background-color: #dc3545; color: white; padding: 3px 8px; border-radius: 50%; font-weight: bold; font-size: 0.8em;">{i}</span>
+                            <td style="padding: 12px 8px; border-bottom: 1px solid #30363d; vertical-align: middle; background-color: #0d1117;">
+                                <span style="background-color: #ff6b6b; color: white; padding: 3px 8px; border-radius: 50%; font-weight: bold; font-size: 0.8em;">{i}</span>
                             </td>
-                            <td style="padding: 12px 8px; border-bottom: 1px solid #e0e0e0; vertical-align: middle;">
-                                <div style="color: #dc3545; font-weight: 600;">{tr['out_name']}</div>
-                                <div style="font-size: 0.8em; color: #888;">#{tr['out_rank']} • £{tr['out_price']:.1f}m</div>
+                            <td style="padding: 12px 8px; border-bottom: 1px solid #30363d; vertical-align: middle; background-color: #0d1117;">
+                                <div style="color: #ff6b6b; font-weight: 600;">{tr['out_name']}</div>
+                                <div style="font-size: 0.8em; color: #8b949e;">#{tr['out_rank']} • £{tr['out_price']:.1f}m</div>
                             </td>
-                            <td style="padding: 12px 8px; border-bottom: 1px solid #e0e0e0; text-align: center; vertical-align: middle;">
+                            <td style="padding: 12px 8px; border-bottom: 1px solid #30363d; text-align: center; vertical-align: middle; background-color: #0d1117;">
                                 <span style="font-size: 1.5em;">➡️</span>
                             </td>
-                            <td style="padding: 12px 8px; border-bottom: 1px solid #e0e0e0; vertical-align: middle;">
-                                <div style="color: #28a745; font-weight: 600;">{tr['in_name']}</div>
-                                <div style="font-size: 0.8em; color: #888;">#{tr['in_rank']} • £{tr['in_price']:.1f}m • xPts: {tr['in_score']:.2f}</div>
+                            <td style="padding: 12px 8px; border-bottom: 1px solid #30363d; vertical-align: middle; background-color: #0d1117;">
+                                <div style="color: #00ff87; font-weight: 600;">{tr['in_name']}</div>
+                                <div style="font-size: 0.8em; color: #8b949e;">#{tr['in_rank']} • £{tr['in_price']:.1f}m • xPts: {tr['in_score']:.2f}</div>
                             </td>
                         </tr>'''
                 
                 transfers_html = f'''
-                    <div style="background-color: #f8f9fa; border-radius: 12px; padding: 15px; margin-bottom: 15px; border: 2px solid #dee2e6;">
-                        <div style="font-size: 1.1em; font-weight: bold; color: #495057; margin-bottom: 12px;">🔄 Topp 3 Anbefalte Transfers</div>
+                    <div style="background-color: #161b22; border-radius: 12px; padding: 15px; margin-bottom: 15px; border: 1px solid #30363d;">
+                        <div style="font-size: 1.1em; font-weight: bold; color: #e6edf3; margin-bottom: 12px;">🔄 Topp 3 Anbefalte Transfers</div>
                         <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse: collapse;">
                             <thead>
                                 <tr>
-                                    <th style="padding: 8px; text-align: left; color: #6c757d; font-size: 0.8em;">#</th>
-                                    <th style="padding: 8px; text-align: left; color: #6c757d; font-size: 0.8em;">UT</th>
-                                    <th style="padding: 8px; text-align: center; color: #6c757d; font-size: 0.8em;"></th>
-                                    <th style="padding: 8px; text-align: left; color: #6c757d; font-size: 0.8em;">INN</th>
+                                    <th style="padding: 8px; text-align: left; color: #8b949e; font-size: 0.8em; background-color: #0d1117;">#</th>
+                                    <th style="padding: 8px; text-align: left; color: #8b949e; font-size: 0.8em; background-color: #0d1117;">UT</th>
+                                    <th style="padding: 8px; text-align: center; color: #8b949e; font-size: 0.8em; background-color: #0d1117;"></th>
+                                    <th style="padding: 8px; text-align: left; color: #8b949e; font-size: 0.8em; background-color: #0d1117;">INN</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -3156,32 +3158,32 @@ class FPLAnalyzer:
                     </div>'''
             
             html = f'''
-        <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #d4edda; border-radius: 20px; margin-bottom: 25px;">
+        <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #161b22; border-radius: 16px; margin-bottom: 24px; border: 1px solid #30363d;">
             <tr>
                 <td style="padding: 25px;">
                     <!-- Header med lag-navn og stats -->
-                    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 20px; border-bottom: 2px solid rgba(0,0,0,0.1); padding-bottom: 20px;">
+                    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 20px; border-bottom: 1px solid #30363d; padding-bottom: 20px;">
                         <tr>
                             <td style="vertical-align: top;">
-                                <div style="font-size: 1.8em; font-weight: bold; color: #1a5928; margin-bottom: 5px;">⚽ {team_name}</div>
-                                <div style="font-size: 0.95em; color: #2d6a3d;">Rangert mot vår AI-analyse • Gameweek {current_gw}</div>
+                                <div style="font-size: 1.8em; font-weight: bold; color: #00ff87; margin-bottom: 5px;">⚽ {team_name}</div>
+                                <div style="font-size: 0.95em; color: #8b949e;">Rangert mot vår AI-analyse • Gameweek {current_gw}</div>
                             </td>
                             <td align="right" style="vertical-align: top;">
                                 <table cellpadding="0" cellspacing="0">
                                     <tr>
-                                        <td style="background-color: #1a5928; padding: 15px 25px; border-radius: 12px; text-align: center; margin-right: 10px;">
-                                            <div style="font-size: 1.8em; font-weight: bold; color: #90EE90;">#{avg_rank:.0f}</div>
-                                            <div style="font-size: 0.75em; color: #c8e6c9; text-transform: uppercase;">Snittrangering</div>
+                                        <td style="background-color: #0d1117; border: 1px solid #00ff87; padding: 15px 25px; border-radius: 12px; text-align: center; margin-right: 10px;">
+                                            <div style="font-size: 1.8em; font-weight: bold; color: #00ff87;">#{avg_rank:.0f}</div>
+                                            <div style="font-size: 0.75em; color: #8b949e; text-transform: uppercase;">Snittrangering</div>
                                         </td>
                                         <td width="15"></td>
-                                        <td style="background-color: #1a5928; padding: 15px 25px; border-radius: 12px; text-align: center;">
-                                            <div style="font-size: 1.8em; font-weight: bold; color: #90EE90;">{top_10}</div>
-                                            <div style="font-size: 0.75em; color: #c8e6c9; text-transform: uppercase;">Topp 10</div>
+                                        <td style="background-color: #0d1117; border: 1px solid #30363d; padding: 15px 25px; border-radius: 12px; text-align: center;">
+                                            <div style="font-size: 1.8em; font-weight: bold; color: #e6edf3;">{top_10}</div>
+                                            <div style="font-size: 0.75em; color: #8b949e; text-transform: uppercase;">Topp 10</div>
                                         </td>
                                         <td width="15"></td>
-                                        <td style="background-color: #1a5928; padding: 15px 25px; border-radius: 12px; text-align: center;">
-                                            <div style="font-size: 1.8em; font-weight: bold; color: #90EE90;">{top_25}</div>
-                                            <div style="font-size: 0.75em; color: #c8e6c9; text-transform: uppercase;">Topp 25</div>
+                                        <td style="background-color: #0d1117; border: 1px solid #30363d; padding: 15px 25px; border-radius: 12px; text-align: center;">
+                                            <div style="font-size: 1.8em; font-weight: bold; color: #e6edf3;">{top_25}</div>
+                                            <div style="font-size: 0.75em; color: #8b949e; text-transform: uppercase;">Topp 25</div>
                                         </td>
                                     </tr>
                                 </table>
@@ -3194,17 +3196,17 @@ class FPLAnalyzer:
                     {transfers_html}
                     
                     <!-- Startoppstilling -->
-                    <div style="background-color: #ffffff; border-radius: 12px; padding: 15px; margin-bottom: 15px;">
-                        <div style="font-size: 1.1em; font-weight: bold; color: #1a5928; margin-bottom: 12px;">⚽ Startoppstilling</div>
+                    <div style="background-color: #0d1117; border-radius: 12px; padding: 15px; margin-bottom: 15px; border: 1px solid #30363d;">
+                        <div style="font-size: 1.1em; font-weight: bold; color: #e6edf3; margin-bottom: 12px;">⚽ Startoppstilling</div>
                         <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse: collapse;">
                             <thead>
                                 <tr>
-                                    <th style="background-color: #1a5928; color: white; padding: 10px 8px; text-align: left; font-weight: 600;">Pos</th>
-                                    <th style="background-color: #1a5928; color: white; padding: 10px 8px; text-align: left; font-weight: 600;">Spiller</th>
-                                    <th style="background-color: #1a5928; color: white; padding: 10px 8px; text-align: left; font-weight: 600;">Lag</th>
-                                    <th style="background-color: #1a5928; color: white; padding: 10px 8px; text-align: left; font-weight: 600;">Pris</th>
-                                    <th style="background-color: #1a5928; color: white; padding: 10px 8px; text-align: left; font-weight: 600;">Rank</th>
-                                    <th style="background-color: #1a5928; color: white; padding: 10px 8px; text-align: left; font-weight: 600;">xPts</th>
+                                    <th style="background-color: #30363d; color: #e6edf3; padding: 10px 8px; text-align: left; font-weight: 600;">Pos</th>
+                                    <th style="background-color: #30363d; color: #e6edf3; padding: 10px 8px; text-align: left; font-weight: 600;">Spiller</th>
+                                    <th style="background-color: #30363d; color: #e6edf3; padding: 10px 8px; text-align: left; font-weight: 600;">Lag</th>
+                                    <th style="background-color: #30363d; color: #e6edf3; padding: 10px 8px; text-align: left; font-weight: 600;">Pris</th>
+                                    <th style="background-color: #30363d; color: #e6edf3; padding: 10px 8px; text-align: left; font-weight: 600;">Rank</th>
+                                    <th style="background-color: #30363d; color: #e6edf3; padding: 10px 8px; text-align: left; font-weight: 600;">xPts</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -3214,17 +3216,17 @@ class FPLAnalyzer:
                     </div>
                     
                     <!-- Benk -->
-                    <div style="background-color: #f5f5f5; border-radius: 12px; padding: 15px;">
-                        <div style="font-size: 1.1em; font-weight: bold; color: #666666; margin-bottom: 12px;">🪑 Benk</div>
+                    <div style="background-color: #0d1117; border-radius: 12px; padding: 15px; border: 1px solid #30363d;">
+                        <div style="font-size: 1.1em; font-weight: bold; color: #8b949e; margin-bottom: 12px;">🪑 Benk</div>
                         <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse: collapse;">
                             <thead>
                                 <tr>
-                                    <th style="background-color: #666666; color: white; padding: 10px 8px; text-align: left; font-weight: 600;">Pos</th>
-                                    <th style="background-color: #666666; color: white; padding: 10px 8px; text-align: left; font-weight: 600;">Spiller</th>
-                                    <th style="background-color: #666666; color: white; padding: 10px 8px; text-align: left; font-weight: 600;">Lag</th>
-                                    <th style="background-color: #666666; color: white; padding: 10px 8px; text-align: left; font-weight: 600;">Pris</th>
-                                    <th style="background-color: #666666; color: white; padding: 10px 8px; text-align: left; font-weight: 600;">Rank</th>
-                                    <th style="background-color: #666666; color: white; padding: 10px 8px; text-align: left; font-weight: 600;">xPts</th>
+                                    <th style="background-color: #21262d; color: #8b949e; padding: 10px 8px; text-align: left; font-weight: 600;">Pos</th>
+                                    <th style="background-color: #21262d; color: #8b949e; padding: 10px 8px; text-align: left; font-weight: 600;">Spiller</th>
+                                    <th style="background-color: #21262d; color: #8b949e; padding: 10px 8px; text-align: left; font-weight: 600;">Lag</th>
+                                    <th style="background-color: #21262d; color: #8b949e; padding: 10px 8px; text-align: left; font-weight: 600;">Pris</th>
+                                    <th style="background-color: #21262d; color: #8b949e; padding: 10px 8px; text-align: left; font-weight: 600;">Rank</th>
+                                    <th style="background-color: #21262d; color: #8b949e; padding: 10px 8px; text-align: left; font-weight: 600;">xPts</th>
                                 </tr>
                             </thead>
                             <tbody>
