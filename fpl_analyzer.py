@@ -2468,9 +2468,9 @@ class FPLAnalyzer:
         return ""
     
     def _get_combined_greeting_deadline_html(self, subscriber_name):
-        """Genererer kombinert greeting og deadline boks"""
+        """Genererer kombinert greeting og deadline boks - E-POSTKLIENT-KOMPATIBEL"""
         if self.data is None:
-            return ""
+            return self._get_simple_header_html(subscriber_name)
         
         try:
             events = self.data.get('events', [])
@@ -2482,15 +2482,7 @@ class FPLAnalyzer:
                     break
             
             if neste_gw is None:
-                return f'''
-                <div class="report-header">
-                    <div class="report-header-content">
-                        <div class="report-title-section">
-                            <h1>⚽ FPL <span>Analyse</span></h1>
-                            <p style="color: var(--text-muted); margin-top: 8px;">👋 Hei {subscriber_name}! Her er din personlige analyse</p>
-                        </div>
-                    </div>
-                </div>'''
+                return self._get_simple_header_html(subscriber_name)
             
             deadline_str = neste_gw.get('deadline_time', '')
             if deadline_str:
@@ -2509,42 +2501,85 @@ class FPLAnalyzer:
                     
                     warning_html = ""
                     if dager == 0 and timer < 6:
-                        warning_html = '<div class="deadline-warning">⚠️ Bare noen timer igjen!</div>'
+                        warning_html = '''
+                        <tr>
+                            <td style="padding-top: 10px;">
+                                <table cellpadding="0" cellspacing="0" border="0" style="background-color: rgba(255,165,2,0.15); border: 1px solid #ffa502; border-radius: 8px;">
+                                    <tr><td style="padding: 8px 14px; color: #ffa502; font-size: 14px; font-family: 'Outfit', Arial, sans-serif;">⚠️ Bare noen timer igjen!</td></tr>
+                                </table>
+                            </td>
+                        </tr>'''
                     elif deadline_date == today_date:
-                        warning_html = '<div class="deadline-warning">⚠️ Deadline er i dag!</div>'
+                        warning_html = '''
+                        <tr>
+                            <td style="padding-top: 10px;">
+                                <table cellpadding="0" cellspacing="0" border="0" style="background-color: rgba(255,165,2,0.15); border: 1px solid #ffa502; border-radius: 8px;">
+                                    <tr><td style="padding: 8px 14px; color: #ffa502; font-size: 14px; font-family: 'Outfit', Arial, sans-serif;">⚠️ Deadline er i dag!</td></tr>
+                                </table>
+                            </td>
+                        </tr>'''
                     elif deadline_date == tomorrow_date:
-                        warning_html = '<div class="deadline-warning">📅 Deadline er i morgen!</div>'
+                        warning_html = '''
+                        <tr>
+                            <td style="padding-top: 10px;">
+                                <table cellpadding="0" cellspacing="0" border="0" style="background-color: rgba(255,165,2,0.15); border: 1px solid #ffa502; border-radius: 8px;">
+                                    <tr><td style="padding: 8px 14px; color: #ffa502; font-size: 14px; font-family: 'Outfit', Arial, sans-serif;">📅 Deadline er i morgen!</td></tr>
+                                </table>
+                            </td>
+                        </tr>'''
                     
                     return f'''
-                <div class="report-header">
-                    <div class="report-header-content">
-                        <div class="report-title-section">
-                            <h1>⚽ FPL <span>Analyse</span></h1>
-                            <p style="color: var(--text-muted); margin-top: 8px;">👋 Hei {subscriber_name}!</p>
-                            <span class="gw-badge">Gameweek {neste_gw.get('id', '?')}</span>
-                        </div>
-                        <div class="deadline-info">
-                            <div class="deadline-countdown">{dager}d {timer}t {minutter}m</div>
-                            <div class="deadline-date">{deadline.strftime('%A %d. %B %H:%M')}</div>
-                            {warning_html}
-                        </div>
-                    </div>
-                </div>'''
+                    <!-- Header -->
+                    <table cellpadding="0" cellspacing="0" border="0" width="100%" style="background: linear-gradient(135deg, #161b22, #0d1117); border: 1px solid #30363d; border-radius: 16px; margin-bottom: 24px;">
+                        <tr>
+                            <td style="padding: 30px 24px;">
+                                <table cellpadding="0" cellspacing="0" border="0" width="100%">
+                                    <tr>
+                                        <td style="vertical-align: top;">
+                                            <h1 style="margin: 0 0 8px 0; font-size: 28px; font-weight: 800; color: #e6edf3; font-family: 'Outfit', Arial, sans-serif;">
+                                                ⚽ FPL <span style="color: #00ff87;">Analyse</span>
+                                            </h1>
+                                            <p style="margin: 0 0 12px 0; color: #8b949e; font-size: 15px; font-family: 'Outfit', Arial, sans-serif;">👋 Hei {subscriber_name}!</p>
+                                            <span style="display: inline-block; background-color: #00ff87; color: #0d1117; padding: 6px 14px; border-radius: 6px; font-size: 14px; font-weight: 700; font-family: 'Outfit', Arial, sans-serif;">Gameweek {neste_gw.get('id', '?')}</span>
+                                        </td>
+                                        <td style="vertical-align: top; text-align: right; width: 200px;">
+                                            <table cellpadding="0" cellspacing="0" border="0" align="right">
+                                                <tr>
+                                                    <td style="text-align: right;">
+                                                        <div style="font-size: 26px; font-weight: 700; color: #00ff87; font-family: 'Outfit', Arial, sans-serif;">{dager}d {timer}t {minutter}m</div>
+                                                        <div style="font-size: 14px; color: #8b949e; font-family: 'Outfit', Arial, sans-serif;">{deadline.strftime('%A %d. %B %H:%M')}</div>
+                                                    </td>
+                                                </tr>
+                                                {warning_html}
+                                            </table>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+                    </table>'''
         except:
             pass
         
+        return self._get_simple_header_html(subscriber_name)
+    
+    def _get_simple_header_html(self, subscriber_name):
+        """Enkel header fallback - E-POSTKLIENT-KOMPATIBEL"""
         return f'''
-        <div class="report-header">
-            <div class="report-header-content">
-                <div class="report-title-section">
-                    <h1>⚽ FPL <span>Analyse</span></h1>
-                    <p style="color: var(--text-muted); margin-top: 8px;">👋 Hei {subscriber_name}! Her er din personlige analyse</p>
-                </div>
-            </div>
-        </div>'''
+        <!-- Header -->
+        <table cellpadding="0" cellspacing="0" border="0" width="100%" style="background: linear-gradient(135deg, #161b22, #0d1117); border: 1px solid #30363d; border-radius: 16px; margin-bottom: 24px;">
+            <tr>
+                <td style="padding: 30px 24px;">
+                    <h1 style="margin: 0 0 8px 0; font-size: 28px; font-weight: 800; color: #e6edf3; font-family: 'Outfit', Arial, sans-serif;">
+                        ⚽ FPL <span style="color: #00ff87;">Analyse</span>
+                    </h1>
+                    <p style="margin: 0; color: #8b949e; font-size: 15px; font-family: 'Outfit', Arial, sans-serif;">👋 Hei {subscriber_name}! Her er din personlige analyse</p>
+                </td>
+            </tr>
+        </table>'''
     
     def _get_value_for_money_html(self):
-        """Genererer HTML for Value for Money-tabellen - én spiller per posisjon"""
+        """Genererer HTML for Value for Money-tabellen - E-POSTKLIENT-KOMPATIBEL"""
         try:
             spisser_df = self.beregn_avansert_spiss_score()
             midtbane_df = self.beregn_avansert_midtbane_score()
@@ -2573,47 +2608,71 @@ class FPLAnalyzer:
             
             top_value = pd.concat([best_keeper, best_forsvar, best_midtbane, best_spiss])
             
+            # Posisjon-farger
+            pos_colors = {
+                'GKP': {'bg': '#ff9f43', 'text': '#000000'},
+                'DEF': {'bg': '#2ed573', 'text': '#000000'},
+                'MID': {'bg': '#1e90ff', 'text': '#ffffff'},
+                'FWD': {'bg': '#ff4757', 'text': '#ffffff'},
+            }
+            
             rows_html = ""
             for _, row in top_value.iterrows():
                 team_name = self.teams_df[self.teams_df['id'] == row['team']].iloc[0]['short_name']
-                pos_class = row['pos'].lower()
+                pos = row['pos']
+                pc = pos_colors.get(pos, {'bg': '#cccccc', 'text': '#000000'})
                 
                 rows_html += f'''
-                <tr>
-                    <td><span class="pos-badge pos-{pos_class}">{row['pos']}</span></td>
-                    <td class="player-name">{row['web_name']}</td>
-                    <td><span class="team-badge">{team_name}</span></td>
-                    <td class="price">£{row['pris_mill']:.1f}m</td>
-                    <td><span class="xpts-badge">{row['xPts_adjusted']:.2f}</span></td>
-                    <td><span class="xpts-badge" style="background: rgba(255,215,0,0.15); color: var(--gold);">{row['value']:.2f}</span></td>
-                </tr>'''
+                        <tr>
+                            <td style="padding: 12px 10px; border-bottom: 1px solid #30363d;">
+                                <span style="display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 700; background-color: {pc['bg']}; color: {pc['text']}; font-family: 'Outfit', Arial, sans-serif;">{pos}</span>
+                            </td>
+                            <td style="padding: 12px 10px; border-bottom: 1px solid #30363d; font-weight: 600; color: #e6edf3; font-family: 'Outfit', Arial, sans-serif;">{row['web_name']}</td>
+                            <td style="padding: 12px 10px; border-bottom: 1px solid #30363d;">
+                                <span style="display: inline-block; background-color: #0d1117; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; color: #e6edf3; font-family: 'Outfit', Arial, sans-serif;">{team_name}</span>
+                            </td>
+                            <td style="padding: 12px 10px; border-bottom: 1px solid #30363d; color: #8b949e; font-family: 'Outfit', Arial, sans-serif;">£{row['pris_mill']:.1f}m</td>
+                            <td style="padding: 12px 10px; border-bottom: 1px solid #30363d;">
+                                <span style="display: inline-block; background-color: rgba(0,255,135,0.15); color: #00ff87; padding: 4px 10px; border-radius: 6px; font-weight: 700; font-family: 'Outfit', Arial, sans-serif;">{row['xPts_adjusted']:.2f}</span>
+                            </td>
+                            <td style="padding: 12px 10px; border-bottom: 1px solid #30363d;">
+                                <span style="display: inline-block; background-color: rgba(255,215,0,0.15); color: #ffd700; padding: 4px 10px; border-radius: 6px; font-weight: 700; font-family: 'Outfit', Arial, sans-serif;">{row['value']:.2f}</span>
+                            </td>
+                        </tr>'''
+            
+            th_style = "text-align: left; padding: 12px 10px; border-bottom: 1px solid #30363d; color: #8b949e; font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; font-family: 'Outfit', Arial, sans-serif;"
             
             html = f'''
-        <div class="section" style="background: linear-gradient(135deg, rgba(0,255,135,0.1), rgba(0,217,114,0.05)); border-color: rgba(0,255,135,0.3);">
-            <div class="section-header">
-                <div>
-                    <div class="section-title" style="color: var(--primary);">💰 Beste Value for Money</div>
-                    <div class="section-subtitle">Høyest xPts per million (xPts/£m) per posisjon</div>
-                </div>
-            </div>
-            <div class="table-wrapper">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Pos</th>
-                            <th>Spiller</th>
-                            <th>Lag</th>
-                            <th>Pris</th>
-                            <th>xPts</th>
-                            <th>xPts/£m</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {rows_html}
-                    </tbody>
-                </table>
-            </div>
-        </div>'''
+                <!-- Value for Money Section -->
+                <table cellpadding="0" cellspacing="0" border="0" width="100%" style="background: linear-gradient(135deg, rgba(0,255,135,0.1), rgba(0,217,114,0.05)); border: 1px solid rgba(0,255,135,0.3); border-radius: 16px; margin-bottom: 24px;">
+                    <tr>
+                        <td style="padding: 24px;">
+                            <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom: 20px;">
+                                <tr>
+                                    <td>
+                                        <div style="font-size: 20px; font-weight: 700; color: #00ff87; font-family: 'Outfit', Arial, sans-serif;">💰 Beste Value for Money</div>
+                                        <div style="font-size: 14px; color: #8b949e; margin-top: 4px; font-family: 'Outfit', Arial, sans-serif;">Høyest xPts per million (xPts/£m) per posisjon</div>
+                                    </td>
+                                </tr>
+                            </table>
+                            <table cellpadding="0" cellspacing="0" border="0" width="100%">
+                                <thead>
+                                    <tr>
+                                        <th style="{th_style}">Pos</th>
+                                        <th style="{th_style}">Spiller</th>
+                                        <th style="{th_style}">Lag</th>
+                                        <th style="{th_style}">Pris</th>
+                                        <th style="{th_style}">xPts</th>
+                                        <th style="{th_style}">xPts/£m</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {rows_html}
+                                </tbody>
+                            </table>
+                        </td>
+                    </tr>
+                </table>'''
             
             return html
             
@@ -2622,7 +2681,7 @@ class FPLAnalyzer:
             return ""
     
     def _get_drommelag_html(self):
-        """Genererer HTML for drømmelaget"""
+        """Genererer HTML for drømmelaget - E-POSTKLIENT-KOMPATIBEL"""
         try:
             # Finn forrige gameweek for poeng
             prev_gw = None
@@ -2661,13 +2720,39 @@ class FPLAnalyzer:
                     pass
                 return 0
             
-            # Bygg drømmelaget
+            # Posisjon-farger
+            pos_colors = {
+                'GK': {'bg': '#ff9f43', 'text': '#000000'},
+                'DEF': {'bg': '#2ed573', 'text': '#000000'},
+                'MID': {'bg': '#1e90ff', 'text': '#ffffff'},
+                'FWD': {'bg': '#ff4757', 'text': '#ffffff'},
+            }
+            
+            def make_row(pos, name, team, price, prev_pts, total_pts, xpts):
+                pc = pos_colors.get(pos, {'bg': '#cccccc', 'text': '#000000'})
+                return f'''
+                        <tr>
+                            <td style="padding: 12px 10px; border-bottom: 1px solid #30363d;">
+                                <span style="display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 700; background-color: {pc['bg']}; color: {pc['text']}; font-family: 'Outfit', Arial, sans-serif;">{pos}</span>
+                            </td>
+                            <td style="padding: 12px 10px; border-bottom: 1px solid #30363d; font-weight: 600; color: #e6edf3; font-family: 'Outfit', Arial, sans-serif;">{name}</td>
+                            <td style="padding: 12px 10px; border-bottom: 1px solid #30363d;">
+                                <span style="display: inline-block; background-color: #0d1117; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; color: #e6edf3; font-family: 'Outfit', Arial, sans-serif;">{team}</span>
+                            </td>
+                            <td style="padding: 12px 10px; border-bottom: 1px solid #30363d; color: #8b949e; font-family: 'Outfit', Arial, sans-serif;">£{price:.1f}m</td>
+                            <td style="padding: 12px 10px; border-bottom: 1px solid #30363d; color: #e6edf3; font-family: 'Outfit', Arial, sans-serif;">{prev_pts}</td>
+                            <td style="padding: 12px 10px; border-bottom: 1px solid #30363d; color: #e6edf3; font-family: 'Outfit', Arial, sans-serif;">{total_pts}</td>
+                            <td style="padding: 12px 10px; border-bottom: 1px solid #30363d;">
+                                <span style="display: inline-block; background-color: rgba(0,255,135,0.15); color: #00ff87; padding: 4px 10px; border-radius: 6px; font-weight: 700; font-family: 'Outfit', Arial, sans-serif;">{xpts:.2f}</span>
+                            </td>
+                        </tr>'''
+            
             rows_html = ""
             total_prev = 0
             total_season = 0
             total_price = 0
             
-            # Keeper - bruk beste keeper basert på xPts
+            # Keeper
             if not keeper_df.empty:
                 k = keeper_df.iloc[0]
                 team_name = self.teams_df[self.teams_df['id'] == k['team']].iloc[0]['short_name']
@@ -2675,16 +2760,7 @@ class FPLAnalyzer:
                 total_prev += prev_pts
                 total_season += k['total_points']
                 total_price += k['pris_mill']
-                rows_html += f'''
-                <tr>
-                    <td><span class="pos-badge pos-gkp">GK</span></td>
-                    <td class="player-name">{k['web_name']}</td>
-                    <td><span class="team-badge">{team_name}</span></td>
-                    <td class="price">£{k['pris_mill']:.1f}m</td>
-                    <td>{prev_pts}</td>
-                    <td>{k['total_points']}</td>
-                    <td><span class="xpts-badge">{k['xPts_adjusted']:.2f}</span></td>
-                </tr>'''
+                rows_html += make_row('GK', k['web_name'], team_name, k['pris_mill'], prev_pts, k['total_points'], k['xPts_adjusted'])
             
             # 3 forsvarere
             for _, row in forsvar_df.head(3).iterrows():
@@ -2693,16 +2769,7 @@ class FPLAnalyzer:
                 total_prev += prev_pts
                 total_season += row['total_points']
                 total_price += row['pris_mill']
-                rows_html += f'''
-                <tr>
-                    <td><span class="pos-badge pos-def">DEF</span></td>
-                    <td class="player-name">{row['web_name']}</td>
-                    <td><span class="team-badge">{team_name}</span></td>
-                    <td class="price">£{row['pris_mill']:.1f}m</td>
-                    <td>{prev_pts}</td>
-                    <td>{row['total_points']}</td>
-                    <td><span class="xpts-badge">{row['xPts_adjusted']:.2f}</span></td>
-                </tr>'''
+                rows_html += make_row('DEF', row['web_name'], team_name, row['pris_mill'], prev_pts, row['total_points'], row['xPts_adjusted'])
             
             # 4 midtbanespillere
             for _, row in midtbane_df.head(4).iterrows():
@@ -2711,16 +2778,7 @@ class FPLAnalyzer:
                 total_prev += prev_pts
                 total_season += row['total_points']
                 total_price += row['pris_mill']
-                rows_html += f'''
-                <tr>
-                    <td><span class="pos-badge pos-mid">MID</span></td>
-                    <td class="player-name">{row['web_name']}</td>
-                    <td><span class="team-badge">{team_name}</span></td>
-                    <td class="price">£{row['pris_mill']:.1f}m</td>
-                    <td>{prev_pts}</td>
-                    <td>{row['total_points']}</td>
-                    <td><span class="xpts-badge">{row['xPts_adjusted']:.2f}</span></td>
-                </tr>'''
+                rows_html += make_row('MID', row['web_name'], team_name, row['pris_mill'], prev_pts, row['total_points'], row['xPts_adjusted'])
             
             # 3 spisser
             for _, row in spisser_df.head(3).iterrows():
@@ -2729,54 +2787,51 @@ class FPLAnalyzer:
                 total_prev += prev_pts
                 total_season += row['total_points']
                 total_price += row['pris_mill']
-                rows_html += f'''
-                <tr>
-                    <td><span class="pos-badge pos-fwd">FWD</span></td>
-                    <td class="player-name">{row['web_name']}</td>
-                    <td><span class="team-badge">{team_name}</span></td>
-                    <td class="price">£{row['pris_mill']:.1f}m</td>
-                    <td>{prev_pts}</td>
-                    <td>{row['total_points']}</td>
-                    <td><span class="xpts-badge">{row['xPts_adjusted']:.2f}</span></td>
-                </tr>'''
+                rows_html += make_row('FWD', row['web_name'], team_name, row['pris_mill'], prev_pts, row['total_points'], row['xPts_adjusted'])
+            
+            th_style = "text-align: left; padding: 12px 10px; border-bottom: 1px solid #30363d; color: #8b949e; font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; font-family: 'Outfit', Arial, sans-serif;"
             
             html = f'''
-        <div class="section" style="background: linear-gradient(135deg, rgba(255, 215, 0, 0.1) 0%, rgba(255, 140, 0, 0.05) 100%); border: 1px solid rgba(255, 215, 0, 0.3);">
-            <div class="section-header">
-                <div>
-                    <div class="section-title" style="color: var(--gold);">🏆Ukens Drømmelag</div>
-                    <div class="section-subtitle">Beste lag basert på xPts-analyse (3-4-3 formasjon)</div>
-                </div>
-            </div>
-            
-            <div class="table-wrapper">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Pos</th>
-                            <th>Spiller</th>
-                            <th>Lag</th>
-                            <th>Pris</th>
-                            <th>GW Pts</th>
-                            <th>Total</th>
-                            <th>xPts</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {rows_html}
-                    </tbody>
-                    <tfoot>
-                        <tr style="border-top: 1px solid var(--border);">
-                            <td colspan="3"><strong>TOTAL</strong></td>
-                            <td class="price"><strong>£{total_price:.1f}m</strong></td>
-                            <td><strong>{total_prev}</strong></td>
-                            <td><strong>{total_season}</strong></td>
-                            <td></td>
-                        </tr>
-                    </tfoot>
-                </table>
-            </div>
-        </div>'''
+                <!-- Drømmelag Section -->
+                <table cellpadding="0" cellspacing="0" border="0" width="100%" style="background: linear-gradient(135deg, rgba(255,215,0,0.1), rgba(255,140,0,0.05)); border: 1px solid rgba(255,215,0,0.3); border-radius: 16px; margin-bottom: 24px;">
+                    <tr>
+                        <td style="padding: 24px;">
+                            <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom: 20px;">
+                                <tr>
+                                    <td>
+                                        <div style="font-size: 20px; font-weight: 700; color: #ffd700; font-family: 'Outfit', Arial, sans-serif;">🏆 Ukens Drømmelag</div>
+                                        <div style="font-size: 14px; color: #8b949e; margin-top: 4px; font-family: 'Outfit', Arial, sans-serif;">Beste lag basert på xPts-analyse (3-4-3 formasjon)</div>
+                                    </td>
+                                </tr>
+                            </table>
+                            <table cellpadding="0" cellspacing="0" border="0" width="100%">
+                                <thead>
+                                    <tr>
+                                        <th style="{th_style}">Pos</th>
+                                        <th style="{th_style}">Spiller</th>
+                                        <th style="{th_style}">Lag</th>
+                                        <th style="{th_style}">Pris</th>
+                                        <th style="{th_style}">GW Pts</th>
+                                        <th style="{th_style}">Total</th>
+                                        <th style="{th_style}">xPts</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {rows_html}
+                                </tbody>
+                                <tfoot>
+                                    <tr>
+                                        <td colspan="3" style="padding: 12px 10px; border-top: 2px solid #30363d; font-weight: bold; color: #e6edf3; font-family: 'Outfit', Arial, sans-serif;">TOTAL</td>
+                                        <td style="padding: 12px 10px; border-top: 2px solid #30363d; font-weight: bold; color: #8b949e; font-family: 'Outfit', Arial, sans-serif;">£{total_price:.1f}m</td>
+                                        <td style="padding: 12px 10px; border-top: 2px solid #30363d; font-weight: bold; color: #e6edf3; font-family: 'Outfit', Arial, sans-serif;">{total_prev}</td>
+                                        <td style="padding: 12px 10px; border-top: 2px solid #30363d; font-weight: bold; color: #e6edf3; font-family: 'Outfit', Arial, sans-serif;">{total_season}</td>
+                                        <td style="padding: 12px 10px; border-top: 2px solid #30363d;"></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </td>
+                    </tr>
+                </table>'''
             
             return html
             
@@ -2911,34 +2966,42 @@ class FPLAnalyzer:
                     rank_text = "-"
                     score_text = "-"
                 
-                # Posisjons-badge farger (inline for e-post-kompatibilitet)
-                pos_colors = {
-                    'gkp': ('background-color: #ffcc00; color: #000;', '#ffcc00'),
-                    'def': ('background-color: #00ff87; color: #000;', '#00ff87'),
-                    'mid': ('background-color: #00bfff; color: #000;', '#00bfff'),
-                    'fwd': ('background-color: #ff6b6b; color: #fff;', '#ff6b6b')
+                # Posisjons-badge farger
+                pos_colors_map = {
+                    'gkp': {'bg': '#ff9f43', 'text': '#000000'},
+                    'def': {'bg': '#2ed573', 'text': '#000000'},
+                    'mid': {'bg': '#1e90ff', 'text': '#ffffff'},
+                    'fwd': {'bg': '#ff4757', 'text': '#ffffff'}
                 }
-                pos_style = pos_colors.get(pos_type.lower(), ('background-color: #ccc; color: #000;', '#ccc'))[0]
+                pc = pos_colors_map.get(pos_type.lower(), {'bg': '#cccccc', 'text': '#000000'})
                 
                 # Rank farger
-                rank_colors = {
-                    'rank-gold': 'color: #b8860b; font-weight: bold;',
-                    'rank-silver': 'color: #666; font-weight: bold;',
-                    'rank-bronze': 'color: #cd7f32; font-weight: bold;',
-                    'rank-normal': 'color: #888;',
-                    'rank-na': 'color: #ccc;'
-                }
-                rank_style = rank_colors.get(rank_class, 'color: #888;')
+                if rank and rank <= 3:
+                    rank_color = '#b8860b'
+                elif rank and rank <= 10:
+                    rank_color = '#666666'
+                elif rank and rank <= 25:
+                    rank_color = '#cd7f32'
+                else:
+                    rank_color = '#888888'
                 
                 row_html = f'''
-                <tr>
-                    <td><span class="pos-badge pos-{pos_type.lower()}">{pos_type}</span></td>
-                    <td class="player-name">{name}{captain_mark}</td>
-                    <td><span class="team-badge">{team}</span></td>
-                    <td class="price">£{price:.1f}m</td>
-                    <td><span style="{rank_style}">{rank_text}</span></td>
-                    <td><span class="xpts-badge">{score_text}</span></td>
-                </tr>'''
+                        <tr>
+                            <td style="padding: 12px 10px; border-bottom: 1px solid #30363d;">
+                                <span style="display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 700; background-color: {pc['bg']}; color: {pc['text']}; font-family: 'Outfit', Arial, sans-serif;">{pos_type}</span>
+                            </td>
+                            <td style="padding: 12px 10px; border-bottom: 1px solid #30363d; font-weight: 600; color: #e6edf3; font-family: 'Outfit', Arial, sans-serif;">{name}{captain_mark}</td>
+                            <td style="padding: 12px 10px; border-bottom: 1px solid #30363d;">
+                                <span style="display: inline-block; background-color: #0d1117; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; color: #e6edf3; font-family: 'Outfit', Arial, sans-serif;">{team}</span>
+                            </td>
+                            <td style="padding: 12px 10px; border-bottom: 1px solid #30363d; color: #8b949e; font-family: 'Outfit', Arial, sans-serif;">£{price:.1f}m</td>
+                            <td style="padding: 12px 10px; border-bottom: 1px solid #30363d;">
+                                <span style="color: {rank_color}; font-weight: bold; font-family: 'Outfit', Arial, sans-serif;">{rank_text}</span>
+                            </td>
+                            <td style="padding: 12px 10px; border-bottom: 1px solid #30363d;">
+                                <span style="display: inline-block; background-color: rgba(0,255,135,0.15); color: #00ff87; padding: 4px 10px; border-radius: 6px; font-weight: 700; font-family: 'Outfit', Arial, sans-serif;">{score_text}</span>
+                            </td>
+                        </tr>'''
                 
                 if position <= 11:
                     startere_html += row_html
@@ -2959,16 +3022,24 @@ class FPLAnalyzer:
             captain_html = ""
             if best_captain:
                 captain_html = f'''
-                    <div style="background: rgba(255,215,0,0.1); border: 1px solid rgba(255,215,0,0.3); border-radius: 12px; padding: 15px; margin-bottom: 15px;">
-                        <div style="font-size: 1.1em; font-weight: bold; color: var(--gold); margin-bottom: 10px;">👑 Anbefalt Kaptein</div>
-                        <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <div>
-                                <span style="font-size: 1.4em; font-weight: bold; color: var(--text);">{best_captain['name']}</span>
-                                <span class="team-badge" style="margin-left: 10px;">{best_captain['team']}</span>
-                            </div>
-                            <span class="xpts-badge">xPts: {best_captain['score']:.2f}</span>
-                        </div>
-                    </div>'''
+                    <table cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color: rgba(255,215,0,0.1); border: 1px solid rgba(255,215,0,0.3); border-radius: 12px; margin-bottom: 15px;">
+                        <tr>
+                            <td style="padding: 15px;">
+                                <div style="font-size: 17px; font-weight: bold; color: #ffd700; margin-bottom: 10px; font-family: 'Outfit', Arial, sans-serif;">👑 Anbefalt Kaptein</div>
+                                <table cellpadding="0" cellspacing="0" border="0" width="100%">
+                                    <tr>
+                                        <td style="vertical-align: middle;">
+                                            <span style="font-size: 22px; font-weight: bold; color: #e6edf3; font-family: 'Outfit', Arial, sans-serif;">{best_captain['name']}</span>
+                                            <span style="display: inline-block; background-color: #0d1117; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; color: #e6edf3; margin-left: 10px; font-family: 'Outfit', Arial, sans-serif;">{best_captain['team']}</span>
+                                        </td>
+                                        <td style="text-align: right; vertical-align: middle;">
+                                            <span style="display: inline-block; background-color: rgba(0,255,135,0.15); color: #00ff87; padding: 6px 12px; border-radius: 6px; font-weight: 700; font-family: 'Outfit', Arial, sans-serif;">xPts: {best_captain['score']:.2f}</span>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+                    </table>'''
             
             # === TRANSFER-ANBEFALINGER ===
             # Finn spillere med lav rangering og foreslå erstatninger
@@ -3031,112 +3102,139 @@ class FPLAnalyzer:
                 for i, tr in enumerate(transfer_recommendations[:3], 1):
                     transfer_rows += f'''
                         <tr>
-                            <td style="padding: 12px 8px; border-bottom: 1px solid var(--border); vertical-align: middle;">
-                                <span style="background: var(--red); color: white; padding: 3px 8px; border-radius: 50%; font-weight: bold; font-size: 0.8em;">{i}</span>
+                            <td style="padding: 12px 8px; border-bottom: 1px solid #30363d; vertical-align: middle;">
+                                <span style="display: inline-block; background-color: #ff6b6b; color: white; padding: 3px 8px; border-radius: 50%; font-weight: bold; font-size: 12px; font-family: 'Outfit', Arial, sans-serif;">{i}</span>
                             </td>
-                            <td style="padding: 12px 8px; border-bottom: 1px solid var(--border); vertical-align: middle;">
-                                <div style="color: var(--red); font-weight: 600;">{tr['out_name']}</div>
-                                <div style="font-size: 0.8em; color: var(--text-muted);">#{tr['out_rank']} • £{tr['out_price']:.1f}m</div>
+                            <td style="padding: 12px 8px; border-bottom: 1px solid #30363d; vertical-align: middle;">
+                                <div style="color: #ff6b6b; font-weight: 600; font-family: 'Outfit', Arial, sans-serif;">{tr['out_name']}</div>
+                                <div style="font-size: 12px; color: #8b949e; font-family: 'Outfit', Arial, sans-serif;">#{tr['out_rank']} • £{tr['out_price']:.1f}m</div>
                             </td>
-                            <td style="padding: 12px 8px; border-bottom: 1px solid var(--border); text-align: center; vertical-align: middle;">
-                                <span style="font-size: 1.5em;">➡️</span>
+                            <td style="padding: 12px 8px; border-bottom: 1px solid #30363d; text-align: center; vertical-align: middle;">
+                                <span style="font-size: 20px;">➡️</span>
                             </td>
-                            <td style="padding: 12px 8px; border-bottom: 1px solid var(--border); vertical-align: middle;">
-                                <div style="color: var(--primary); font-weight: 600;">{tr['in_name']}</div>
-                                <div style="font-size: 0.8em; color: var(--text-muted);">#{tr['in_rank']} • £{tr['in_price']:.1f}m • xPts: {tr['in_score']:.2f}</div>
+                            <td style="padding: 12px 8px; border-bottom: 1px solid #30363d; vertical-align: middle;">
+                                <div style="color: #00ff87; font-weight: 600; font-family: 'Outfit', Arial, sans-serif;">{tr['in_name']}</div>
+                                <div style="font-size: 12px; color: #8b949e; font-family: 'Outfit', Arial, sans-serif;">#{tr['in_rank']} • £{tr['in_price']:.1f}m • xPts: {tr['in_score']:.2f}</div>
                             </td>
                         </tr>'''
                 
                 transfers_html = f'''
-                    <div style="background: var(--dark); border-radius: 12px; padding: 15px; margin-bottom: 15px; border: 1px solid var(--border);">
-                        <div style="font-size: 1.1em; font-weight: bold; color: var(--text); margin-bottom: 12px;">🔄 Topp 3 Anbefalte Transfers</div>
-                        <table style="width: 100%;">
-                            <thead>
-                                <tr>
-                                    <th style="padding: 8px; text-align: left;">#</th>
-                                    <th style="padding: 8px; text-align: left;">UT</th>
-                                    <th style="padding: 8px; text-align: center;"></th>
-                                    <th style="padding: 8px; text-align: left;">INN</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {transfer_rows}
-                            </tbody>
-                        </table>
-                    </div>'''
+                    <table cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color: #0d1117; border-radius: 12px; border: 1px solid #30363d; margin-bottom: 15px;">
+                        <tr>
+                            <td style="padding: 15px;">
+                                <div style="font-size: 17px; font-weight: bold; color: #e6edf3; margin-bottom: 12px; font-family: 'Outfit', Arial, sans-serif;">🔄 Topp 3 Anbefalte Transfers</div>
+                                <table cellpadding="0" cellspacing="0" border="0" width="100%">
+                                    <tbody>
+                                        {transfer_rows}
+                                    </tbody>
+                                </table>
+                            </td>
+                        </tr>
+                    </table>'''
+            
+            th_style = "text-align: left; padding: 12px 10px; border-bottom: 1px solid #30363d; color: #8b949e; font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; font-family: 'Outfit', Arial, sans-serif;"
             
             html = f'''
-        <div class="section" style="background: var(--card-bg); border: 1px solid var(--border);">
-            <!-- Header med lag-navn og stats -->
-            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px; margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid var(--border);">
-                <div>
-                    <div style="font-size: 1.5em; font-weight: 800; color: var(--text);">⚽ {team_name}</div>
-                    <div style="font-size: 0.9em; color: var(--text-muted);">Rangert mot vår AI-analyse • Gameweek {current_gw}</div>
-                </div>
-                <div style="display: flex; gap: 12px;">
-                    <div style="background: var(--dark); padding: 15px 25px; border-radius: 12px; text-align: center;">
-                        <div style="font-size: 1.8em; font-weight: bold; color: var(--primary);">#{avg_rank:.0f}</div>
-                        <div style="font-size: 0.75em; color: var(--text-muted); text-transform: uppercase;">Snittrangering</div>
-                    </div>
-                    <div style="background: var(--dark); padding: 15px 25px; border-radius: 12px; text-align: center;">
-                        <div style="font-size: 1.8em; font-weight: bold; color: var(--primary);">{top_10}</div>
-                        <div style="font-size: 0.75em; color: var(--text-muted); text-transform: uppercase;">Topp 10</div>
-                    </div>
-                    <div style="background: var(--dark); padding: 15px 25px; border-radius: 12px; text-align: center;">
-                        <div style="font-size: 1.8em; font-weight: bold; color: var(--primary);">{top_25}</div>
-                        <div style="font-size: 0.75em; color: var(--text-muted); text-transform: uppercase;">Topp 25</div>
-                    </div>
-                </div>
-            </div>
-            
-            {captain_html}
-            
-            {transfers_html}
-            
-            <!-- Startoppstilling -->
-            <div style="margin-bottom: 15px;">
-                <div style="font-size: 1.1em; font-weight: bold; color: var(--text); margin-bottom: 12px;">⚽ Startoppstilling</div>
-                <div class="table-wrapper">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Pos</th>
-                                <th>Spiller</th>
-                                <th>Lag</th>
-                                <th>Pris</th>
-                                <th>Rank</th>
-                                <th>xPts</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {startere_html}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-            
-            <!-- Benk -->
-            <div style="background: var(--dark); border-radius: 12px; padding: 15px;">
-                <div style="font-size: 1.1em; font-weight: bold; color: var(--text-muted); margin-bottom: 12px;">🪑 Benk</div>
-                <div class="table-wrapper">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Pos</th>
-                                <th>Spiller</th>
-                                <th>Lag</th>
-                                <th>Pris</th>
-                                <th>Rank</th>
-                                <th>xPts</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {benk_html}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
+                <!-- Mitt Lag Section -->
+                <table cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color: #161b22; border: 1px solid #30363d; border-radius: 16px; margin-bottom: 24px;">
+                    <tr>
+                        <td style="padding: 24px;">
+                            <!-- Header med lag-navn og stats -->
+                            <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid #30363d;">
+                                <tr>
+                                    <td style="vertical-align: top;">
+                                        <div style="font-size: 24px; font-weight: 800; color: #e6edf3; font-family: 'Outfit', Arial, sans-serif;">⚽ {team_name}</div>
+                                        <div style="font-size: 14px; color: #8b949e; margin-top: 4px; font-family: 'Outfit', Arial, sans-serif;">Rangert mot vår AI-analyse • Gameweek {current_gw}</div>
+                                    </td>
+                                    <td style="vertical-align: top; text-align: right;">
+                                        <table cellpadding="0" cellspacing="0" border="0" align="right">
+                                            <tr>
+                                                <td style="padding-right: 10px;">
+                                                    <table cellpadding="0" cellspacing="0" border="0" style="background-color: #0d1117; border-radius: 12px;">
+                                                        <tr>
+                                                            <td style="padding: 12px 20px; text-align: center;">
+                                                                <div style="font-size: 24px; font-weight: bold; color: #00ff87; font-family: 'Outfit', Arial, sans-serif;">#{avg_rank:.0f}</div>
+                                                                <div style="font-size: 10px; color: #8b949e; text-transform: uppercase; font-family: 'Outfit', Arial, sans-serif;">Snitt</div>
+                                                            </td>
+                                                        </tr>
+                                                    </table>
+                                                </td>
+                                                <td style="padding-right: 10px;">
+                                                    <table cellpadding="0" cellspacing="0" border="0" style="background-color: #0d1117; border-radius: 12px;">
+                                                        <tr>
+                                                            <td style="padding: 12px 20px; text-align: center;">
+                                                                <div style="font-size: 24px; font-weight: bold; color: #00ff87; font-family: 'Outfit', Arial, sans-serif;">{top_10}</div>
+                                                                <div style="font-size: 10px; color: #8b949e; text-transform: uppercase; font-family: 'Outfit', Arial, sans-serif;">Topp 10</div>
+                                                            </td>
+                                                        </tr>
+                                                    </table>
+                                                </td>
+                                                <td>
+                                                    <table cellpadding="0" cellspacing="0" border="0" style="background-color: #0d1117; border-radius: 12px;">
+                                                        <tr>
+                                                            <td style="padding: 12px 20px; text-align: center;">
+                                                                <div style="font-size: 24px; font-weight: bold; color: #00ff87; font-family: 'Outfit', Arial, sans-serif;">{top_25}</div>
+                                                                <div style="font-size: 10px; color: #8b949e; text-transform: uppercase; font-family: 'Outfit', Arial, sans-serif;">Topp 25</div>
+                                                            </td>
+                                                        </tr>
+                                                    </table>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+                            
+                            {captain_html}
+                            
+                            {transfers_html}
+                            
+                            <!-- Startoppstilling -->
+                            <div style="margin-bottom: 15px;">
+                                <div style="font-size: 17px; font-weight: bold; color: #e6edf3; margin-bottom: 12px; font-family: 'Outfit', Arial, sans-serif;">⚽ Startoppstilling</div>
+                                <table cellpadding="0" cellspacing="0" border="0" width="100%">
+                                    <thead>
+                                        <tr>
+                                            <th style="{th_style}">Pos</th>
+                                            <th style="{th_style}">Spiller</th>
+                                            <th style="{th_style}">Lag</th>
+                                            <th style="{th_style}">Pris</th>
+                                            <th style="{th_style}">Rank</th>
+                                            <th style="{th_style}">xPts</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {startere_html}
+                                    </tbody>
+                                </table>
+                            </div>
+                            
+                            <!-- Benk -->
+                            <table cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color: #0d1117; border-radius: 12px;">
+                                <tr>
+                                    <td style="padding: 15px;">
+                                        <div style="font-size: 17px; font-weight: bold; color: #8b949e; margin-bottom: 12px; font-family: 'Outfit', Arial, sans-serif;">🪑 Benk</div>
+                                        <table cellpadding="0" cellspacing="0" border="0" width="100%">
+                                            <thead>
+                                                <tr>
+                                                    <th style="{th_style}">Pos</th>
+                                                    <th style="{th_style}">Spiller</th>
+                                                    <th style="{th_style}">Lag</th>
+                                                    <th style="{th_style}">Pris</th>
+                                                    <th style="{th_style}">Rank</th>
+                                                    <th style="{th_style}">xPts</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {benk_html}
+                                            </tbody>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                </table>
         '''
             
             return html
@@ -3146,41 +3244,44 @@ class FPLAnalyzer:
             return ""
     
     def _df_to_html_table(self, df, position_type):
-        """Konverterer en DataFrame til en stylet HTML-tabell"""
+        """Konverterer en DataFrame til en stylet HTML-tabell - E-POSTKLIENT-KOMPATIBEL"""
         if df is None or df.empty:
-            return "<p>No data available</p>"
+            return "<p style='color: #8b949e; font-family: Outfit, Arial, sans-serif;'>No data available</p>"
         
-        html = "<table><thead><tr><th>#</th>"
+        th_style = "text-align: left; padding: 12px 10px; border-bottom: 1px solid #30363d; color: #8b949e; font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; font-family: 'Outfit', Arial, sans-serif;"
+        td_style = "padding: 12px 10px; border-bottom: 1px solid #30363d; color: #e6edf3; font-family: 'Outfit', Arial, sans-serif;"
+        
+        html = f'<table cellpadding="0" cellspacing="0" border="0" width="100%"><thead><tr><th style="{th_style}">#</th>'
         for col in df.columns:
-            html += f"<th>{col}</th>"
+            html += f'<th style="{th_style}">{col}</th>'
         html += "</tr></thead><tbody>"
         
         for idx, (_, row) in enumerate(df.iterrows(), 1):
-            medal = ""
+            # Medalje med inline styling
             if idx == 1:
-                medal = '<span class="medal gold">1</span>'
+                medal = '<span style="display: inline-block; width: 26px; height: 26px; line-height: 26px; text-align: center; border-radius: 50%; font-size: 12px; font-weight: 700; background-color: #ffd700; color: #000; font-family: \'Outfit\', Arial, sans-serif;">1</span>'
             elif idx == 2:
-                medal = '<span class="medal silver">2</span>'
+                medal = '<span style="display: inline-block; width: 26px; height: 26px; line-height: 26px; text-align: center; border-radius: 50%; font-size: 12px; font-weight: 700; background-color: #c0c0c0; color: #000; font-family: \'Outfit\', Arial, sans-serif;">2</span>'
             elif idx == 3:
-                medal = '<span class="medal bronze">3</span>'
+                medal = '<span style="display: inline-block; width: 26px; height: 26px; line-height: 26px; text-align: center; border-radius: 50%; font-size: 12px; font-weight: 700; background-color: #cd7f32; color: #fff; font-family: \'Outfit\', Arial, sans-serif;">3</span>'
             else:
-                medal = f'<span class="rank">{idx}</span>'
+                medal = f'<span style="display: inline-block; width: 26px; height: 26px; line-height: 26px; text-align: center; border-radius: 50%; font-size: 13px; font-weight: 600; background-color: #0d1117; color: #e6edf3; font-family: \'Outfit\', Arial, sans-serif;">{idx}</span>'
             
-            html += f"<tr><td>{medal}</td>"
+            html += f'<tr><td style="{td_style}">{medal}</td>'
             for col_idx, val in enumerate(row):
                 col_name = df.columns[col_idx]
                 
                 # Style basert på kolonne
                 if col_name == 'name':
-                    html += f'<td class="player-name">{val}</td>'
+                    html += f'<td style="{td_style} font-weight: 600;">{val}</td>'
                 elif col_name == 'lag':
-                    html += f'<td><span class="team-badge">{val}</span></td>'
+                    html += f'<td style="{td_style}"><span style="display: inline-block; background-color: #0d1117; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; color: #e6edf3; font-family: \'Outfit\', Arial, sans-serif;">{val}</span></td>'
                 elif col_name == 'pris':
-                    html += f'<td class="price">£{val}m</td>'
+                    html += f'<td style="{td_style} color: #8b949e;">£{val}m</td>'
                 elif col_name in ['total', 'xPts_ad', 'xPts_base']:
-                    html += f'<td><span class="score">{val}</span></td>'
+                    html += f'<td style="{td_style}"><span style="display: inline-block; background-color: rgba(0,255,135,0.15); color: #00ff87; padding: 4px 10px; border-radius: 6px; font-weight: 700; font-family: \'Outfit\', Arial, sans-serif;">{val}</span></td>'
                 else:
-                    html += f'<td>{val}</td>'
+                    html += f'<td style="{td_style}">{val}</td>'
             html += "</tr>"
         
         html += "</tbody></table>"
@@ -3206,7 +3307,7 @@ class FPLAnalyzer:
         return filnavn
     
     def _generer_personlig_html_rapport(self, filnavn, team_id, subscriber_name):
-        """Genererer en personlig HTML-rapport for en abonnent"""
+        """Genererer en personlig HTML-rapport for en abonnent - E-POSTKLIENT-KOMPATIBEL"""
         
         # Hent data
         keepere = self.beste_keepere(antall=15, min_minutter=180)
@@ -3231,384 +3332,152 @@ class FPLAnalyzer:
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <title>FPL Analyse - {subscriber_name}</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <style>
-        :root {{
-            --primary: #00ff87;
-            --primary-dark: #00d972;
-            --dark: #0d1117;
-            --darker: #010409;
-            --card-bg: #161b22;
-            --border: #30363d;
-            --text: #e6edf3;
-            --text-muted: #8b949e;
-            --gold: #ffd700;
-            --silver: #c0c0c0;
-            --bronze: #cd7f32;
-            --red: #ff6b6b;
-            --orange: #ffa502;
-            --blue: #4dabf7;
+    <!--[if mso]>
+    <noscript>
+        <xml>
+            <o:OfficeDocumentSettings>
+                <o:PixelsPerInch>96</o:PixelsPerInch>
+            </o:OfficeDocumentSettings>
+        </xml>
+    </noscript>
+    <![endif]-->
+    <style type="text/css">
+        /* E-postklient reset */
+        body, table, td, p, a, li, blockquote {{
+            -webkit-text-size-adjust: 100%;
+            -ms-text-size-adjust: 100%;
         }}
-
-        * {{ margin: 0; padding: 0; box-sizing: border-box; }}
-
-        html, body {{
-            overflow-x: hidden;
-            width: 100%;
+        table, td {{
+            mso-table-lspace: 0pt;
+            mso-table-rspace: 0pt;
         }}
-
-        body {{
-            font-family: 'Outfit', -apple-system, sans-serif;
-            background: var(--darker);
-            color: var(--text);
-            line-height: 1.6;
-        }}
-
-        .report-container {{
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 30px 20px;
-        }}
-
-        .report-header {{
-            background: linear-gradient(135deg, var(--card-bg), var(--dark));
-            padding: 30px 20px;
-            border-bottom: 1px solid var(--border);
-            margin-bottom: 30px;
-            border-radius: 16px;
-        }}
-
-        .report-header-content {{
-            max-width: 1200px;
-            margin: 0 auto;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 20px;
-        }}
-
-        .report-title-section h1 {{
-            font-size: 1.8rem;
-            font-weight: 800;
-            margin-bottom: 4px;
-        }}
-
-        .report-title-section h1 span {{ color: var(--primary); }}
-
-        .gw-badge {{
-            display: inline-block;
-            background: var(--primary);
-            color: var(--dark);
-            padding: 4px 12px;
-            border-radius: 6px;
-            font-size: 0.85rem;
-            font-weight: 700;
-        }}
-
-        .deadline-info {{
-            text-align: right;
-        }}
-
-        .deadline-countdown {{
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: var(--primary);
-        }}
-
-        .deadline-date {{
-            font-size: 0.85rem;
-            color: var(--text-muted);
-        }}
-
-        .deadline-warning {{
-            background: rgba(255, 165, 2, 0.15);
-            border: 1px solid var(--orange);
-            color: var(--orange);
-            padding: 8px 14px;
-            border-radius: 8px;
-            font-size: 0.85rem;
-            margin-top: 8px;
-        }}
-
-        .section {{
-            background: var(--card-bg);
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 24px;
-            margin-bottom: 24px;
-        }}
-
-        .section-header {{
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-            gap: 12px;
-        }}
-
-        .section-title {{
-            font-size: 1.3rem;
-            font-weight: 700;
-        }}
-
-        .section-subtitle {{
-            font-size: 0.9rem;
-            color: var(--text-muted);
-            margin-top: 4px;
-        }}
-
-        .table-wrapper {{
-            overflow-x: auto;
-            margin: 0 -24px;
-            padding: 0 24px;
-        }}
-
-        table {{
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 0.9rem;
-        }}
-
-        th {{
-            text-align: left;
-            padding: 12px 10px;
-            border-bottom: 1px solid var(--border);
-            color: var(--text-muted);
-            font-weight: 600;
-            font-size: 0.8rem;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            white-space: nowrap;
-        }}
-
-        td {{
-            padding: 12px 10px;
-            border-bottom: 1px solid var(--border);
-            white-space: nowrap;
-        }}
-
-        tr:last-child td {{ border-bottom: none; }}
-
-        tr:hover td {{ background: rgba(255, 255, 255, 0.02); }}
-
-        .player-name {{
-            font-weight: 600;
-            max-width: 120px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }}
-
-        .team-badge {{
-            background: var(--dark);
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 0.75rem;
-            font-weight: 600;
-        }}
-
-        .price {{ color: var(--text-muted); }}
-
-        .xpts-badge {{
-            background: rgba(0, 255, 135, 0.15);
-            color: var(--primary);
-            padding: 4px 10px;
-            border-radius: 6px;
-            font-weight: 700;
-        }}
-
-        .score {{
-            background: rgba(0, 255, 135, 0.15);
-            color: var(--primary);
-            padding: 4px 10px;
-            border-radius: 6px;
-            font-weight: 700;
-        }}
-
-        .elo-badge {{
-            background: rgba(77, 171, 247, 0.15);
-            color: var(--blue);
-            padding: 4px 8px;
-            border-radius: 6px;
-            font-weight: 600;
-            font-size: 0.8rem;
-        }}
-
-        .pos-badge {{
-            display: inline-block;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 0.75rem;
-            font-weight: 700;
-        }}
-
-        .pos-gkp {{ background: #ff9f43; color: #000; }}
-        .pos-def {{ background: #2ed573; color: #000; }}
-        .pos-mid {{ background: #1e90ff; color: #fff; }}
-        .pos-fwd {{ background: #ff4757; color: #fff; }}
-
-        .medal {{
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 26px;
-            height: 26px;
-            border-radius: 50%;
-            font-size: 0.75rem;
-            font-weight: 700;
-        }}
-
-        .medal.gold {{ background: var(--gold); color: #000; }}
-        .medal.silver {{ background: var(--silver); color: #000; }}
-        .medal.bronze {{ background: var(--bronze); color: #fff; }}
-
-        .gold {{ background: var(--gold); color: #000; }}
-        .silver {{ background: var(--silver); color: #000; }}
-        .bronze {{ background: var(--bronze); color: #fff; }}
-
-        .rank {{
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 26px;
-            height: 26px;
-            background: var(--dark);
-            border-radius: 50%;
-            font-size: 0.8rem;
-            font-weight: 600;
-        }}
-
-        .stats-grid {{
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(min(100%, 140px), 1fr));
-            gap: 12px;
-            margin-bottom: 20px;
-        }}
-
-        .stat-card {{
-            background: var(--dark);
-            border-radius: 12px;
-            padding: 16px;
-            text-align: center;
-        }}
-
-        .stat-value {{
-            font-size: 1.8rem;
-            font-weight: 800;
-            color: var(--primary);
-        }}
-
-        .stat-label {{
-            font-size: 0.8rem;
-            color: var(--text-muted);
-            margin-top: 4px;
-        }}
-
-        .report-footer {{
-            text-align: center;
-            padding: 20px;
-            color: var(--text-muted);
-            font-size: 0.85rem;
-        }}
-
-        .report-footer a {{
-            color: var(--text-muted);
+        img {{
+            -ms-interpolation-mode: bicubic;
+            border: 0;
+            height: auto;
+            line-height: 100%;
+            outline: none;
             text-decoration: none;
         }}
-
-        .report-footer a:hover {{
-            color: var(--primary);
+        body {{
+            margin: 0 !important;
+            padding: 0 !important;
+            width: 100% !important;
         }}
-
-        @media (max-width: 768px) {{
-            .report-header-content {{
-                flex-direction: column;
-                text-align: center;
-            }}
-
-            .deadline-info {{
-                text-align: center;
-            }}
-
-            .section {{
-                padding: 16px;
-            }}
-
-            .table-wrapper {{
-                margin: 0 -16px;
-                padding: 0 16px;
-            }}
-        }}
+        /* Google Fonts fallback */
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap');
     </style>
 </head>
-<body>
-    <div class="report-container">
-        {combined_greeting_html}
-        
-        {mitt_lag_html}
-        
-        {value_for_money_html}
-        
-        {drommelag_html}
-        
-        <div class="section">
-            <div class="section-header">
-                <div>
-                    <div class="section-title">🧤 Top 15 Keepere</div>
-                    <div class="section-subtitle">xPts Model: 4×CS + 0.33×Saves + MinPts + Bonus</div>
-                </div>
-            </div>
-            <div class="table-wrapper">
-            {self._df_to_html_table(keepere, 'GKP')}
-            </div>
-        </div>
-        
-        <div class="section">
-            <div class="section-header">
-                <div>
-                    <div class="section-title">🛡️ Top 15 Forsvarere</div>
-                    <div class="section-subtitle">xPts Model: 4×CS + 6×xG + 3×xA + MinPts + Bonus</div>
-                </div>
-            </div>
-            <div class="table-wrapper">
-            {self._df_to_html_table(forsvar, 'DEF')}
-            </div>
-        </div>
-        
-        <div class="section">
-            <div class="section-header">
-                <div>
-                    <div class="section-title">🎯 Top 15 Midtbanespillere</div>
-                    <div class="section-subtitle">xPts Model: 5×xG + 3×xA + 1×CS + MinPts + Bonus</div>
-                </div>
-            </div>
-            <div class="table-wrapper">
-            {self._df_to_html_table(midtbane, 'MID')}
-            </div>
-        </div>
-        
-        <div class="section">
-            <div class="section-header">
-                <div>
-                    <div class="section-title">⭐ Top 15 Angrepsspillere</div>
-                    <div class="section-subtitle">xPts Model: 4×xG + 3×xA + MinPts + Bonus</div>
-                </div>
-            </div>
-            <div class="table-wrapper">
-            {self._df_to_html_table(spisser, 'FWD')}
-            </div>
-        </div>
-        
-        <div class="report-footer">
-            <p>FPL Analyse • AI-drevet innsikt for Fantasy Premier League</p>
-            <p>Rapport generert: {datetime.now().strftime('%d.%m.%Y kl. %H:%M')}</p>
-            <p style="margin-top: 12px;"><a href="https://fplanalyse.no/unsubscribe.html">Meld deg av tjenesten</a></p>
-        </div>
-    </div>
+<body style="margin: 0; padding: 0; background-color: #010409; font-family: 'Outfit', Arial, Helvetica, sans-serif; color: #e6edf3; line-height: 1.6;">
+    <!-- Wrapper Table -->
+    <table cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color: #010409;">
+        <tr>
+            <td align="center" style="padding: 20px 10px;">
+                <!-- Main Container -->
+                <table cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width: 700px; background-color: #010409;">
+                    <tr>
+                        <td>
+                            {combined_greeting_html}
+                            
+                            <!-- Content Area -->
+                            <table cellpadding="0" cellspacing="0" border="0" width="100%">
+                                <tr>
+                                    <td style="padding: 20px 0;">
+                                        {mitt_lag_html}
+                                        
+                                        {value_for_money_html}
+                                        
+                                        {drommelag_html}
+                                        
+                                        <!-- Keepere Section -->
+                                        <table cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color: #161b22; border: 1px solid #30363d; border-radius: 16px; margin-bottom: 24px;">
+                                            <tr>
+                                                <td style="padding: 24px;">
+                                                    <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom: 20px;">
+                                                        <tr>
+                                                            <td>
+                                                                <div style="font-size: 20px; font-weight: 700; color: #e6edf3; font-family: 'Outfit', Arial, sans-serif;">🧤 Top 15 Keepere</div>
+                                                                <div style="font-size: 14px; color: #8b949e; margin-top: 4px; font-family: 'Outfit', Arial, sans-serif;">xPts Model: 4×CS + 0.33×Saves + MinPts + Bonus</div>
+                                                            </td>
+                                                        </tr>
+                                                    </table>
+                                                    {self._df_to_html_table(keepere, 'GKP')}
+                                                </td>
+                                            </tr>
+                                        </table>
+                                        
+                                        <!-- Forsvarere Section -->
+                                        <table cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color: #161b22; border: 1px solid #30363d; border-radius: 16px; margin-bottom: 24px;">
+                                            <tr>
+                                                <td style="padding: 24px;">
+                                                    <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom: 20px;">
+                                                        <tr>
+                                                            <td>
+                                                                <div style="font-size: 20px; font-weight: 700; color: #e6edf3; font-family: 'Outfit', Arial, sans-serif;">🛡️ Top 15 Forsvarere</div>
+                                                                <div style="font-size: 14px; color: #8b949e; margin-top: 4px; font-family: 'Outfit', Arial, sans-serif;">xPts Model: 4×CS + 6×xG + 3×xA + MinPts + Bonus</div>
+                                                            </td>
+                                                        </tr>
+                                                    </table>
+                                                    {self._df_to_html_table(forsvar, 'DEF')}
+                                                </td>
+                                            </tr>
+                                        </table>
+                                        
+                                        <!-- Midtbane Section -->
+                                        <table cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color: #161b22; border: 1px solid #30363d; border-radius: 16px; margin-bottom: 24px;">
+                                            <tr>
+                                                <td style="padding: 24px;">
+                                                    <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom: 20px;">
+                                                        <tr>
+                                                            <td>
+                                                                <div style="font-size: 20px; font-weight: 700; color: #e6edf3; font-family: 'Outfit', Arial, sans-serif;">🎯 Top 15 Midtbanespillere</div>
+                                                                <div style="font-size: 14px; color: #8b949e; margin-top: 4px; font-family: 'Outfit', Arial, sans-serif;">xPts Model: 5×xG + 3×xA + 1×CS + MinPts + Bonus</div>
+                                                            </td>
+                                                        </tr>
+                                                    </table>
+                                                    {self._df_to_html_table(midtbane, 'MID')}
+                                                </td>
+                                            </tr>
+                                        </table>
+                                        
+                                        <!-- Spisser Section -->
+                                        <table cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color: #161b22; border: 1px solid #30363d; border-radius: 16px; margin-bottom: 24px;">
+                                            <tr>
+                                                <td style="padding: 24px;">
+                                                    <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom: 20px;">
+                                                        <tr>
+                                                            <td>
+                                                                <div style="font-size: 20px; font-weight: 700; color: #e6edf3; font-family: 'Outfit', Arial, sans-serif;">⭐ Top 15 Angrepsspillere</div>
+                                                                <div style="font-size: 14px; color: #8b949e; margin-top: 4px; font-family: 'Outfit', Arial, sans-serif;">xPts Model: 4×xG + 3×xA + MinPts + Bonus</div>
+                                                            </td>
+                                                        </tr>
+                                                    </table>
+                                                    {self._df_to_html_table(spisser, 'FWD')}
+                                                </td>
+                                            </tr>
+                                        </table>
+                                        
+                                        <!-- Footer -->
+                                        <table cellpadding="0" cellspacing="0" border="0" width="100%">
+                                            <tr>
+                                                <td style="text-align: center; padding: 30px 20px; color: #8b949e; font-size: 14px; font-family: 'Outfit', Arial, sans-serif;">
+                                                    <p style="margin: 0 0 8px 0;">FPL Analyse • AI-drevet innsikt for Fantasy Premier League</p>
+                                                    <p style="margin: 0 0 12px 0;">Rapport generert: {datetime.now().strftime('%d.%m.%Y kl. %H:%M')}</p>
+                                                    <p style="margin: 0;"><a href="https://fplanalyse.no/unsubscribe.html" style="color: #8b949e; text-decoration: none;">Meld deg av tjenesten</a></p>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
 </body>
 </html>'''
         
