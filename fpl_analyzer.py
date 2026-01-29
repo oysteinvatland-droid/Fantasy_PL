@@ -2741,77 +2741,42 @@ class FPLAnalyzer:
                 </tr>'''
             
             html = f'''
-        <div class="section dream-team-section">
+        <div class="section" style="background: linear-gradient(135deg, rgba(255, 215, 0, 0.1) 0%, rgba(255, 140, 0, 0.05) 100%); border: 1px solid rgba(255, 215, 0, 0.3);">
             <div class="section-header">
-                <span class="section-icon">🏆</span>
                 <div>
-                    <div class="section-title">Ukens Drømmelag</div>
-                    <div class="section-desc">Beste lag basert på xPts-analyse (3-4-3 formasjon)</div>
+                    <div class="section-title" style="color: var(--gold);">🏆Ukens Drømmelag</div>
+                    <div class="section-subtitle">Beste lag basert på xPts-analyse (3-4-3 formasjon)</div>
                 </div>
             </div>
             
-            <table>
-                <thead>
-                    <tr>
-                        <th>Pos</th>
-                        <th>Spiller</th>
-                        <th>Lag</th>
-                        <th>Pris</th>
-                        <th>GW Pts</th>
-                        <th>Total</th>
-                        <th>xPts</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {rows_html}
-                </tbody>
-                <tfoot>
-                    <tr class="total-row">
-                        <td colspan="3"><strong>TOTAL</strong></td>
-                        <td class="price"><strong>£{total_price:.1f}m</strong></td>
-                        <td><strong>{total_prev}</strong></td>
-                        <td><strong>{total_season}</strong></td>
-                        <td></td>
-                    </tr>
-                </tfoot>
-            </table>
-        </div>
-        
-        <style>
-            .dream-team-section {{
-                background: linear-gradient(135deg, #ffd700 0%, #ff8c00 100%);
-                border: none;
-            }}
-            .dream-team-section .section-title {{
-                color: #1a1a2e;
-            }}
-            .dream-team-section .section-desc {{
-                color: #333;
-            }}
-            .dream-team-section table {{
-                background: rgba(255,255,255,0.95);
-            }}
-            .dream-team-section th {{
-                background: #1a1a2e !important;
-                color: white !important;
-            }}
-            .dream-team-section td {{
-                color: #333;
-            }}
-            .dream-team-section .total-row {{
-                background: #f0f0f0;
-            }}
-            .dream-team-section .total-row td {{
-                border-top: 2px solid #1a1a2e;
-            }}
-            .xpts-badge {{
-                background: linear-gradient(135deg, #00ff87 0%, #00d4aa 100%);
-                color: #1a1a2e;
-                padding: 3px 8px;
-                border-radius: 5px;
-                font-weight: bold;
-            }}
-        </style>'''
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Pos</th>
+                            <th>Spiller</th>
+                            <th>Lag</th>
+                            <th>Pris</th>
+                            <th>GW Pts</th>
+                            <th>Total</th>
+                            <th>xPts</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {rows_html}
+                    </tbody>
+                    <tfoot>
+                        <tr style="border-top: 1px solid var(--border);">
+                            <td colspan="3"><strong>TOTAL</strong></td>
+                            <td class="price"><strong>£{total_price:.1f}m</strong></td>
+                            <td><strong>{total_prev}</strong></td>
+                            <td><strong>{total_season}</strong></td>
+                            <td></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>'''
             
             return html
             
@@ -2967,12 +2932,12 @@ class FPLAnalyzer:
                 
                 row_html = f'''
                 <tr>
-                    <td style="padding: 10px 8px; border-bottom: 1px solid #e0e0e0;"><span style="{pos_style} padding: 3px 8px; border-radius: 5px; font-size: 0.8em; font-weight: bold;">{pos_type}</span></td>
-                    <td style="padding: 10px 8px; border-bottom: 1px solid #e0e0e0; font-weight: 600; color: #000;">{name}{captain_mark}</td>
-                    <td style="padding: 10px 8px; border-bottom: 1px solid #e0e0e0;"><span style="background-color: #e8e8e8; padding: 2px 6px; border-radius: 4px; font-size: 0.85em;">{team}</span></td>
-                    <td style="padding: 10px 8px; border-bottom: 1px solid #e0e0e0; color: #1a5928; font-weight: 600;">£{price:.1f}m</td>
-                    <td style="padding: 10px 8px; border-bottom: 1px solid #e0e0e0;"><span style="{rank_style}">{rank_text}</span></td>
-                    <td style="padding: 10px 8px; border-bottom: 1px solid #e0e0e0; font-weight: bold; color: #1a5928;">{score_text}</td>
+                    <td><span class="pos-badge pos-{pos_type.lower()}">{pos_type}</span></td>
+                    <td class="player-name">{name}{captain_mark}</td>
+                    <td><span class="team-badge">{team}</span></td>
+                    <td class="price">£{price:.1f}m</td>
+                    <td><span style="{rank_style}">{rank_text}</span></td>
+                    <td><span class="xpts-badge">{score_text}</span></td>
                 </tr>'''
                 
                 if position <= 11:
@@ -2994,19 +2959,15 @@ class FPLAnalyzer:
             captain_html = ""
             if best_captain:
                 captain_html = f'''
-                    <div style="background-color: #fff3cd; border-radius: 12px; padding: 15px; margin-bottom: 15px;">
-                        <div style="font-size: 1.1em; font-weight: bold; color: #856404; margin-bottom: 10px;">👑 Anbefalt Kaptein</div>
-                        <table width="100%" cellpadding="0" cellspacing="0">
-                            <tr>
-                                <td style="vertical-align: middle;">
-                                    <span style="font-size: 1.4em; font-weight: bold; color: #1a1a2e;">{best_captain['name']}</span>
-                                    <span style="background-color: #e8e8e8; padding: 2px 8px; border-radius: 4px; font-size: 0.85em; margin-left: 10px;">{best_captain['team']}</span>
-                                </td>
-                                <td align="right" style="vertical-align: middle;">
-                                    <span style="background-color: #28a745; color: white; padding: 8px 15px; border-radius: 8px; font-weight: bold;">xPts: {best_captain['score']:.2f}</span>
-                                </td>
-                            </tr>
-                        </table>
+                    <div style="background: rgba(255,215,0,0.1); border: 1px solid rgba(255,215,0,0.3); border-radius: 12px; padding: 15px; margin-bottom: 15px;">
+                        <div style="font-size: 1.1em; font-weight: bold; color: var(--gold); margin-bottom: 10px;">👑 Anbefalt Kaptein</div>
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <span style="font-size: 1.4em; font-weight: bold; color: var(--text);">{best_captain['name']}</span>
+                                <span class="team-badge" style="margin-left: 10px;">{best_captain['team']}</span>
+                            </div>
+                            <span class="xpts-badge">xPts: {best_captain['score']:.2f}</span>
+                        </div>
                     </div>'''
             
             # === TRANSFER-ANBEFALINGER ===
@@ -3070,32 +3031,32 @@ class FPLAnalyzer:
                 for i, tr in enumerate(transfer_recommendations[:3], 1):
                     transfer_rows += f'''
                         <tr>
-                            <td style="padding: 12px 8px; border-bottom: 1px solid #e0e0e0; vertical-align: middle;">
-                                <span style="background-color: #dc3545; color: white; padding: 3px 8px; border-radius: 50%; font-weight: bold; font-size: 0.8em;">{i}</span>
+                            <td style="padding: 12px 8px; border-bottom: 1px solid var(--border); vertical-align: middle;">
+                                <span style="background: var(--red); color: white; padding: 3px 8px; border-radius: 50%; font-weight: bold; font-size: 0.8em;">{i}</span>
                             </td>
-                            <td style="padding: 12px 8px; border-bottom: 1px solid #e0e0e0; vertical-align: middle;">
-                                <div style="color: #dc3545; font-weight: 600;">{tr['out_name']}</div>
-                                <div style="font-size: 0.8em; color: #888;">#{tr['out_rank']} • £{tr['out_price']:.1f}m</div>
+                            <td style="padding: 12px 8px; border-bottom: 1px solid var(--border); vertical-align: middle;">
+                                <div style="color: var(--red); font-weight: 600;">{tr['out_name']}</div>
+                                <div style="font-size: 0.8em; color: var(--text-muted);">#{tr['out_rank']} • £{tr['out_price']:.1f}m</div>
                             </td>
-                            <td style="padding: 12px 8px; border-bottom: 1px solid #e0e0e0; text-align: center; vertical-align: middle;">
+                            <td style="padding: 12px 8px; border-bottom: 1px solid var(--border); text-align: center; vertical-align: middle;">
                                 <span style="font-size: 1.5em;">➡️</span>
                             </td>
-                            <td style="padding: 12px 8px; border-bottom: 1px solid #e0e0e0; vertical-align: middle;">
-                                <div style="color: #28a745; font-weight: 600;">{tr['in_name']}</div>
-                                <div style="font-size: 0.8em; color: #888;">#{tr['in_rank']} • £{tr['in_price']:.1f}m • xPts: {tr['in_score']:.2f}</div>
+                            <td style="padding: 12px 8px; border-bottom: 1px solid var(--border); vertical-align: middle;">
+                                <div style="color: var(--primary); font-weight: 600;">{tr['in_name']}</div>
+                                <div style="font-size: 0.8em; color: var(--text-muted);">#{tr['in_rank']} • £{tr['in_price']:.1f}m • xPts: {tr['in_score']:.2f}</div>
                             </td>
                         </tr>'''
                 
                 transfers_html = f'''
-                    <div style="background-color: #f8f9fa; border-radius: 12px; padding: 15px; margin-bottom: 15px; border: 2px solid #dee2e6;">
-                        <div style="font-size: 1.1em; font-weight: bold; color: #495057; margin-bottom: 12px;">🔄 Topp 3 Anbefalte Transfers</div>
-                        <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse: collapse;">
+                    <div style="background: var(--dark); border-radius: 12px; padding: 15px; margin-bottom: 15px; border: 1px solid var(--border);">
+                        <div style="font-size: 1.1em; font-weight: bold; color: var(--text); margin-bottom: 12px;">🔄 Topp 3 Anbefalte Transfers</div>
+                        <table style="width: 100%;">
                             <thead>
                                 <tr>
-                                    <th style="padding: 8px; text-align: left; color: #6c757d; font-size: 0.8em;">#</th>
-                                    <th style="padding: 8px; text-align: left; color: #6c757d; font-size: 0.8em;">UT</th>
-                                    <th style="padding: 8px; text-align: center; color: #6c757d; font-size: 0.8em;"></th>
-                                    <th style="padding: 8px; text-align: left; color: #6c757d; font-size: 0.8em;">INN</th>
+                                    <th style="padding: 8px; text-align: left;">#</th>
+                                    <th style="padding: 8px; text-align: left;">UT</th>
+                                    <th style="padding: 8px; text-align: center;"></th>
+                                    <th style="padding: 8px; text-align: left;">INN</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -3105,85 +3066,77 @@ class FPLAnalyzer:
                     </div>'''
             
             html = f'''
-        <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #d4edda; border-radius: 20px; margin-bottom: 25px;">
-            <tr>
-                <td style="padding: 25px;">
-                    <!-- Header med lag-navn og stats -->
-                    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 20px; border-bottom: 2px solid rgba(0,0,0,0.1); padding-bottom: 20px;">
-                        <tr>
-                            <td style="vertical-align: top;">
-                                <div style="font-size: 1.8em; font-weight: bold; color: #1a5928; margin-bottom: 5px;">⚽ {team_name}</div>
-                                <div style="font-size: 0.95em; color: #2d6a3d;">Rangert mot vår AI-analyse • Gameweek {current_gw}</div>
-                            </td>
-                            <td align="right" style="vertical-align: top;">
-                                <table cellpadding="0" cellspacing="0">
-                                    <tr>
-                                        <td style="background-color: #1a5928; padding: 15px 25px; border-radius: 12px; text-align: center; margin-right: 10px;">
-                                            <div style="font-size: 1.8em; font-weight: bold; color: #90EE90;">#{avg_rank:.0f}</div>
-                                            <div style="font-size: 0.75em; color: #c8e6c9; text-transform: uppercase;">Snittrangering</div>
-                                        </td>
-                                        <td width="15"></td>
-                                        <td style="background-color: #1a5928; padding: 15px 25px; border-radius: 12px; text-align: center;">
-                                            <div style="font-size: 1.8em; font-weight: bold; color: #90EE90;">{top_10}</div>
-                                            <div style="font-size: 0.75em; color: #c8e6c9; text-transform: uppercase;">Topp 10</div>
-                                        </td>
-                                        <td width="15"></td>
-                                        <td style="background-color: #1a5928; padding: 15px 25px; border-radius: 12px; text-align: center;">
-                                            <div style="font-size: 1.8em; font-weight: bold; color: #90EE90;">{top_25}</div>
-                                            <div style="font-size: 0.75em; color: #c8e6c9; text-transform: uppercase;">Topp 25</div>
-                                        </td>
-                                    </tr>
-                                </table>
-                            </td>
-                        </tr>
+        <div class="section" style="background: var(--card-bg); border: 1px solid var(--border);">
+            <!-- Header med lag-navn og stats -->
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px; margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid var(--border);">
+                <div>
+                    <div style="font-size: 1.5em; font-weight: 800; color: var(--text);">⚽ {team_name}</div>
+                    <div style="font-size: 0.9em; color: var(--text-muted);">Rangert mot vår AI-analyse • Gameweek {current_gw}</div>
+                </div>
+                <div style="display: flex; gap: 12px;">
+                    <div style="background: var(--dark); padding: 15px 25px; border-radius: 12px; text-align: center;">
+                        <div style="font-size: 1.8em; font-weight: bold; color: var(--primary);">#{avg_rank:.0f}</div>
+                        <div style="font-size: 0.75em; color: var(--text-muted); text-transform: uppercase;">Snittrangering</div>
+                    </div>
+                    <div style="background: var(--dark); padding: 15px 25px; border-radius: 12px; text-align: center;">
+                        <div style="font-size: 1.8em; font-weight: bold; color: var(--primary);">{top_10}</div>
+                        <div style="font-size: 0.75em; color: var(--text-muted); text-transform: uppercase;">Topp 10</div>
+                    </div>
+                    <div style="background: var(--dark); padding: 15px 25px; border-radius: 12px; text-align: center;">
+                        <div style="font-size: 1.8em; font-weight: bold; color: var(--primary);">{top_25}</div>
+                        <div style="font-size: 0.75em; color: var(--text-muted); text-transform: uppercase;">Topp 25</div>
+                    </div>
+                </div>
+            </div>
+            
+            {captain_html}
+            
+            {transfers_html}
+            
+            <!-- Startoppstilling -->
+            <div style="margin-bottom: 15px;">
+                <div style="font-size: 1.1em; font-weight: bold; color: var(--text); margin-bottom: 12px;">⚽ Startoppstilling</div>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Pos</th>
+                                <th>Spiller</th>
+                                <th>Lag</th>
+                                <th>Pris</th>
+                                <th>Rank</th>
+                                <th>xPts</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {startere_html}
+                        </tbody>
                     </table>
-                    
-                    {captain_html}
-                    
-                    {transfers_html}
-                    
-                    <!-- Startoppstilling -->
-                    <div style="background-color: #ffffff; border-radius: 12px; padding: 15px; margin-bottom: 15px;">
-                        <div style="font-size: 1.1em; font-weight: bold; color: #1a5928; margin-bottom: 12px;">⚽ Startoppstilling</div>
-                        <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse: collapse;">
-                            <thead>
-                                <tr>
-                                    <th style="background-color: #1a5928; color: white; padding: 10px 8px; text-align: left; font-weight: 600;">Pos</th>
-                                    <th style="background-color: #1a5928; color: white; padding: 10px 8px; text-align: left; font-weight: 600;">Spiller</th>
-                                    <th style="background-color: #1a5928; color: white; padding: 10px 8px; text-align: left; font-weight: 600;">Lag</th>
-                                    <th style="background-color: #1a5928; color: white; padding: 10px 8px; text-align: left; font-weight: 600;">Pris</th>
-                                    <th style="background-color: #1a5928; color: white; padding: 10px 8px; text-align: left; font-weight: 600;">Rank</th>
-                                    <th style="background-color: #1a5928; color: white; padding: 10px 8px; text-align: left; font-weight: 600;">xPts</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {startere_html}
-                            </tbody>
-                        </table>
-                    </div>
-                    
-                    <!-- Benk -->
-                    <div style="background-color: #f5f5f5; border-radius: 12px; padding: 15px;">
-                        <div style="font-size: 1.1em; font-weight: bold; color: #666666; margin-bottom: 12px;">🪑 Benk</div>
-                        <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse: collapse;">
-                            <thead>
-                                <tr>
-                                    <th style="background-color: #666666; color: white; padding: 10px 8px; text-align: left; font-weight: 600;">Pos</th>
-                                    <th style="background-color: #666666; color: white; padding: 10px 8px; text-align: left; font-weight: 600;">Spiller</th>
-                                    <th style="background-color: #666666; color: white; padding: 10px 8px; text-align: left; font-weight: 600;">Lag</th>
-                                    <th style="background-color: #666666; color: white; padding: 10px 8px; text-align: left; font-weight: 600;">Pris</th>
-                                    <th style="background-color: #666666; color: white; padding: 10px 8px; text-align: left; font-weight: 600;">Rank</th>
-                                    <th style="background-color: #666666; color: white; padding: 10px 8px; text-align: left; font-weight: 600;">xPts</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {benk_html}
-                            </tbody>
-                        </table>
-                    </div>
-                </td>
-            </tr>
-        </table>
+                </div>
+            </div>
+            
+            <!-- Benk -->
+            <div style="background: var(--dark); border-radius: 12px; padding: 15px;">
+                <div style="font-size: 1.1em; font-weight: bold; color: var(--text-muted); margin-bottom: 12px;">🪑 Benk</div>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Pos</th>
+                                <th>Spiller</th>
+                                <th>Lag</th>
+                                <th>Pris</th>
+                                <th>Rank</th>
+                                <th>xPts</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {benk_html}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
         '''
             
             return html
