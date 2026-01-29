@@ -69,7 +69,7 @@ for report in reports:
         
         msg = MIMEMultipart('alternative')
         msg['Subject'] = subject
-        msg['From'] = f"FPL Analyzer Bot <{username}>"
+        msg['From'] = "FPL Analyse <kontakt@fplanalyse.no>"
         msg['To'] = email
         
         html_part = MIMEText(html_content, 'html')
