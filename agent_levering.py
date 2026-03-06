@@ -14,27 +14,33 @@ Output:
   - Oppdatert Firebase (welcome_sent = true)
 """
 
-import json
 import os
 import sys
 import argparse
 import smtplib
-import requests
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
-PROJECT_ID = "fpl-ai-analyzer"
+from pipeline_shared.firestore import mark_welcome_sent
+from pipeline_shared.io import read_json
 
 
 # ─── Hjelpefunksjoner ─────────────────────────────────────────────────────────
 
-def last_json(filnavn, default=None):
-    try:
-        with open(filnavn, 'r', encoding='utf-8') as f:
-            return json.load(f)
-    except FileNotFoundError:
-        print(f"⚠️ Finner ikke {filnavn}")
-        return default
+def hent_modus_konfig(is_welcome):
+    """Returnerer rapportfil og emne for valgt leveringsmodus."""
+    if is_welcome:
+        return {
+            'manifest_file': 'welcome_reports.json',
+            'subject': "🎉 Velkommen til din Fantasy Premier League - AI Rapport",
+        }
+
+    gw_number = os.environ.get('GW_NUMBER', '?')
+    hours_until = os.environ.get('HOURS_UNTIL', '?')
+    return {
+        'manifest_file': 'generated_reports.json',
+        'subject': f"⚠️ HUSK Å OPPDATERE LAGET! GW{gw_number} – Kun {hours_until} timer igjen!",
+    }
 
 
 def send_epost(server, fra, til, emne, html_innhold):
@@ -70,7 +76,7 @@ def send_rapporter(reports, emne, fra="FPL Analyse <kontakt@fplanalyse.no>"):
         print("ℹ️ Ingen rapporter å sende")
         return 0
 
-    server, username = koble_til_smtp()
+    server, _username = koble_til_smtp()
     sendt = 0
     feil = 0
 
@@ -123,19 +129,12 @@ def oppdater_firebase_welcome_sent(welcome_reports, new_subscribers):
             print(f"  ? Fant ikke doc_id for {email}")
             continue
 
-        url = (f"https://firestore.googleapis.com/v1/projects/{PROJECT_ID}"
-               f"/databases/(default)/documents/subscribers/{doc_id}"
-               f"?updateMask.fieldPaths=welcome_sent")
-
-        payload = {"fields": {"welcome_sent": {"booleanValue": True}}}
-
         try:
-            response = requests.patch(url, json=payload, timeout=30)
-            if response.status_code == 200:
+            if mark_welcome_sent(doc_id):
                 print(f"  ✓ {email} markert som welcome_sent")
                 oppdatert += 1
             else:
-                print(f"  ✗ Kunne ikke oppdatere {email} (status {response.status_code})")
+                print(f"  ✗ Kunne ikke oppdatere {email}")
         except Exception as e:
             print(f"  ✗ Firebase-feil for {email}: {e}")
 
@@ -155,33 +154,27 @@ if __name__ == "__main__":
     print(f"   Modus: {'VELKOMST' if args.welcome else 'UKENTLIG'}")
     print("=" * 60)
 
+    config = hent_modus_konfig(is_welcome=args.welcome)
+    reports = read_json(config['manifest_file'], default=[])
+
     if args.welcome:
-        # ── VELKOMST-MODUS ──────────────────────────────────────────
-        reports = last_json('welcome_reports.json', default=[])
         if not reports:
             print("ℹ️ Ingen velkomst-rapporter å sende")
             sys.exit(0)
 
-        emne = "🎉 Velkommen til din Fantasy Premier League - AI Rapport"
-        sendt = send_rapporter(reports, emne)
+        sendt = send_rapporter(reports, config['subject'])
 
         # Oppdater Firebase
         if sendt > 0:
-            new_subs = last_json('new_subscribers.json', default=[])
+            new_subs = read_json('new_subscribers.json', default=[])
             oppdater_firebase_welcome_sent(reports, new_subs)
 
     else:
-        # ── UKENTLIG MODUS ───────────────────────────────────────────
-        reports = last_json('generated_reports.json', default=[])
         if not reports:
             print("ℹ️ Ingen ukentlige rapporter å sende")
             sys.exit(0)
 
-        gw_number = os.environ.get('GW_NUMBER', '?')
-        hours_until = os.environ.get('HOURS_UNTIL', '?')
-        emne = f"⚠️ HUSK Å OPPDATERE LAGET! GW{gw_number} – Kun {hours_until} timer igjen!"
-
-        sendt = send_rapporter(reports, emne)
+        sendt = send_rapporter(reports, config['subject'])
 
     print("\n" + "=" * 60)
     print(f"✅ AGENT 4 FULLFØRT – {sendt} e-poster sendt")

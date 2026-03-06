@@ -19,26 +19,28 @@ Output:
   - welcome_reports.json   (hvis --welcome)
 """
 
-import json
 import os
 import sys
 import argparse
-from datetime import datetime, timezone
+
+from pipeline_shared.io import read_json, write_json
 
 # Importer eksisterende analyzer for å gjenbruke HTML-generering
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-# Legg til prosjektrot slik at fpl_analyzer kan importeres
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-
-
-def last_json(filnavn, default=None):
-    try:
-        with open(filnavn, 'r', encoding='utf-8') as f:
-            return json.load(f)
-    except FileNotFoundError:
-        print(f"⚠️ Finner ikke {filnavn}")
-        return default
+def hent_modus_konfig(is_welcome):
+    """Returnerer input-/outputfiler for valgt rapportmodus."""
+    if is_welcome:
+        return {
+            'subscriber_file': 'new_subscribers.json',
+            'report_manifest': 'welcome_reports.json',
+            'modus_navn': 'velkomst',
+        }
+    return {
+        'subscriber_file': 'subscribers.json',
+        'report_manifest': 'generated_reports.json',
+        'modus_navn': 'ukentlig',
+    }
 
 
 def initialiser_analyzer():
@@ -52,7 +54,7 @@ def initialiser_analyzer():
         print("❌ Kunne ikke importere FPLAnalyzer – sjekk at fpl_analyzer.py finnes i samme mappe")
         sys.exit(1)
 
-    raw = last_json('fpl_raw_data.json')
+    raw = read_json('fpl_raw_data.json')
     if not raw:
         print("❌ Mangler fpl_raw_data.json – kjør agent_data.py først")
         sys.exit(1)
@@ -129,35 +131,28 @@ if __name__ == "__main__":
 
     if args.welcome:
         # Velkomst-modus: kun nye abonnenter
-        subscribers = last_json('new_subscribers.json', default=[])
+        config = hent_modus_konfig(is_welcome=True)
+        subscribers = read_json(config['subscriber_file'], default=[])
         if not subscribers:
             print("ℹ️ Ingen nye abonnenter å sende velkomst til")
-            with open('welcome_reports.json', 'w') as f:
-                json.dump([], f)
+            write_json(config['report_manifest'], [])
             sys.exit(0)
 
-        generated = generer_rapporter(subscribers, analyzer, modus='velkomst')
-
-        with open('welcome_reports.json', 'w', encoding='utf-8') as f:
-            json.dump(generated, f, indent=2, ensure_ascii=False)
-
-        print(f"\n💾 Lagret welcome_reports.json ({len(generated)} rapporter)")
+        generated = generer_rapporter(subscribers, analyzer, modus=config['modus_navn'])
+        write_json(config['report_manifest'], generated)
+        print(f"\n💾 Lagret {config['report_manifest']} ({len(generated)} rapporter)")
 
     else:
-        # Ukentlig modus: alle abonnenter
-        subscribers = last_json('subscribers.json', default=[])
+        config = hent_modus_konfig(is_welcome=False)
+        subscribers = read_json(config['subscriber_file'], default=[])
         if not subscribers:
             print("⚠️ Ingen abonnenter funnet i subscribers.json")
-            with open('generated_reports.json', 'w') as f:
-                json.dump([], f)
+            write_json(config['report_manifest'], [])
             sys.exit(0)
 
-        generated = generer_rapporter(subscribers, analyzer, modus='ukentlig')
-
-        with open('generated_reports.json', 'w', encoding='utf-8') as f:
-            json.dump(generated, f, indent=2, ensure_ascii=False)
-
-        print(f"\n💾 Lagret generated_reports.json ({len(generated)} rapporter)")
+        generated = generer_rapporter(subscribers, analyzer, modus=config['modus_navn'])
+        write_json(config['report_manifest'], generated)
+        print(f"\n💾 Lagret {config['report_manifest']} ({len(generated)} rapporter)")
 
     print("\n" + "=" * 60)
     print(f"✅ AGENT 3 FULLFØRT – {len(generated)} rapporter generert")
