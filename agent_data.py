@@ -12,7 +12,6 @@ Output:
   - deadline_status.json  : Info om neste gameweek og deadline
 """
 
-import json
 import os
 import sys
 import requests
@@ -20,11 +19,13 @@ import urllib3
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 
+from pipeline_shared.firestore import split_subscribers, subscribers_collection_url
+from pipeline_shared.io import write_json, write_text
+
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 BASE_URL = "https://fantasy.premierleague.com/api/"
-PROJECT_ID = "fpl-ai-analyzer"
-FIRESTORE_URL = f"https://firestore.googleapis.com/v1/projects/{PROJECT_ID}/databases/(default)/documents/subscribers"
+FIRESTORE_URL = subscribers_collection_url()
 
 # ─── Hjelpefunksjoner ────────────────────────────────────────────────────────
 
@@ -116,36 +117,14 @@ def hent_abonnenter():
         print(f"⚠️ Firebase-feil: {e}")
         return [], []
 
-    subscribers = []
-    new_subscribers = []
+    subscribers, new_subscribers = split_subscribers(data.get('documents', []))
 
-    for doc in data.get('documents', []):
-        fields = doc.get('fields', {})
-        doc_id = doc.get('name', '').split('/')[-1]
-
-        name = fields.get('name', {}).get('stringValue', '')
-        email = fields.get('email', {}).get('stringValue', '')
-        welcome_sent = fields.get('welcome_sent', {}).get('booleanValue', False)
-
-        team_id_field = fields.get('team_id', {})
-        if 'integerValue' in team_id_field:
-            team_id = int(team_id_field['integerValue'])
-        elif 'stringValue' in team_id_field:
-            try:
-                team_id = int(team_id_field['stringValue'])
-            except ValueError:
-                team_id = 0
+    new_emails = {sub['email'].lower() for sub in new_subscribers}
+    for sub in subscribers:
+        if sub['email'].lower() in new_emails:
+            print(f"  ✨ Ny abonnent: {sub['name']}")
         else:
-            team_id = 0
-
-        if name and email and team_id > 0:
-            sub = {'name': name, 'email': email, 'team_id': team_id, 'doc_id': doc_id}
-            subscribers.append(sub)
-            if not welcome_sent:
-                new_subscribers.append(sub)
-                print(f"  ✨ Ny abonnent: {name}")
-            else:
-                print(f"  ✓ {name} ({email})")
+            print(f"  ✓ {sub['name']} ({sub['email']})")
 
     print(f"✓ {len(subscribers)} abonnenter totalt, {len(new_subscribers)} nye")
     return subscribers, new_subscribers
@@ -198,12 +177,9 @@ if __name__ == "__main__":
     # 1. Hent abonnenter fra Firebase
     subscribers, new_subscribers = hent_abonnenter()
 
-    with open('subscribers.json', 'w', encoding='utf-8') as f:
-        json.dump(subscribers, f, indent=2, ensure_ascii=False)
-    with open('new_subscribers.json', 'w', encoding='utf-8') as f:
-        json.dump(new_subscribers, f, indent=2, ensure_ascii=False)
-    with open('has_new_subscribers.txt', 'w') as f:
-        f.write('true' if new_subscribers else 'false')
+    write_json('subscribers.json', subscribers)
+    write_json('new_subscribers.json', new_subscribers)
+    write_text('has_new_subscribers.txt', 'true' if new_subscribers else 'false')
 
     # 2. Hent FPL-data
     bootstrap = hent_fpl_bootstrap()
@@ -212,8 +188,7 @@ if __name__ == "__main__":
     # 3. Sjekk deadline
     deadline_status = sjekk_deadline(bootstrap, force_send=force_send)
 
-    with open('deadline_status.json', 'w') as f:
-        json.dump(deadline_status, f, indent=2)
+    write_json('deadline_status.json', deadline_status)
 
     # 4. Hent spillerhistorikk for alle spillere
     player_ids = [p['id'] for p in bootstrap.get('elements', [])]
@@ -227,8 +202,7 @@ if __name__ == "__main__":
         'hentet_tidspunkt': datetime.now(timezone.utc).isoformat()
     }
 
-    with open('fpl_raw_data.json', 'w', encoding='utf-8') as f:
-        json.dump(raw_data, f, ensure_ascii=False)
+    write_json('fpl_raw_data.json', raw_data, indent=None)
 
     print("\n" + "=" * 60)
     print("✅ AGENT 1 FULLFØRT")
