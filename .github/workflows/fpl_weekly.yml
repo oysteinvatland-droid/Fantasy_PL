@@ -1,12 +1,12 @@
-name: FPL Weekly Report
+name: FPL Weekly Report – Agent Pipeline
 
 on:
   schedule:
-    - cron: '0 * * * *'  # Kjører hver time
+    - cron: '0 * * * *'   # Kjører hver time
   workflow_dispatch:
     inputs:
       force_send:
-        description: 'Send e-post uansett deadline (for testing)'
+        description: 'Send ukentlig e-post uansett deadline (for testing)'
         required: false
         default: 'false'
         type: choice
@@ -14,172 +14,240 @@ on:
           - 'false'
           - 'true'
 
+# ─────────────────────────────────────────────────────────────────────────────
+# AGENT 1 – DATA
+# Henter rådata fra FPL API og Firebase.
+# Produserer: fpl_raw_data.json, subscribers.json, deadline_status.json
+# ─────────────────────────────────────────────────────────────────────────────
 jobs:
-  send-fpl-report:
+  agent-data:
+    name: "🤖 Agent 1 – Data"
     runs-on: ubuntu-latest
-    
+    outputs:
+      send_weekly: ${{ steps.les-status.outputs.send_weekly }}
+      has_new:     ${{ steps.les-status.outputs.has_new }}
+      gw_number:   ${{ steps.les-status.outputs.gw_number }}
+      hours_until: ${{ steps.les-status.outputs.hours_until }}
+
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-    
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.11'
-    
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
-    
-    - name: Fetch subscribers from Firebase
-      run: |
-        echo "=== Fetching subscribers from Firebase ==="
-        python3 fetch_subscribers.py
-        echo "=== All subscribers ==="
-        cat subscribers.json
-        echo ""
-        echo "=== New subscribers (pending welcome) ==="
-        cat new_subscribers.json
-    
-    - name: Check for new subscribers
-      id: check_new
-      run: |
-        HAS_NEW=$(cat has_new_subscribers.txt)
-        echo "has_new_subscribers=$HAS_NEW" >> $GITHUB_OUTPUT
-        echo "Has new subscribers: $HAS_NEW"
-    
-    - name: Generate welcome reports for new subscribers
-      if: steps.check_new.outputs.has_new_subscribers == 'true'
-      run: |
-        echo "=== Generating welcome reports ==="
-        python fpl_analyzer.py --subscribers new_subscribers.json 2>&1 | tee welcome_console.txt
-        
-        # Flytt generated_reports.json til welcome_reports.json
-        if [ -f "generated_reports.json" ]; then
-          mv generated_reports.json welcome_reports.json
-          echo "Welcome reports generated:"
-          cat welcome_reports.json
-        fi
-    
-    - name: Send welcome emails to new subscribers
-      if: steps.check_new.outputs.has_new_subscribers == 'true'
-      env:
-        EMAIL_USERNAME: ${{ secrets.EMAIL_USERNAME }}
-        EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
-      run: |
-        echo "=== Sending welcome emails ==="
-        python3 send_emails.py --welcome
-    
-    - name: Mark welcome sent in Firebase
-      if: steps.check_new.outputs.has_new_subscribers == 'true'
-      run: |
-        echo "=== Updating Firebase ==="
-        python3 mark_welcome_sent.py
-    
-    - name: Check deadline
-      id: deadline_check
-      env:
-        FORCE_SEND: ${{ github.event.inputs.force_send }}
-      run: |
-        python -c "
-        import requests
-        import os
-        from datetime import datetime, timezone
+      - uses: actions/checkout@v4
 
-        force_send = os.environ.get('FORCE_SEND', 'false') == 'true'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
 
-        try:
-            response = requests.get('https://fantasy.premierleague.com/api/bootstrap-static/', timeout=30)
-            response.raise_for_status()
-            data = response.json()
-            
-            if not isinstance(data, dict):
-                print(f'Unexpected data type: {type(data)}')
-                open('send_email.txt', 'w').write('false')
-                exit(0)
-            
-            neste_gw = None
-            events = data.get('events', [])
-            for event in events:
-                if not event.get('finished', True):
-                    neste_gw = event
-                    break
+      - name: Installer avhengigheter
+        run: pip install -r requirements.txt
 
-            if neste_gw:
-                deadline_str = neste_gw.get('deadline_time', '')
-                deadline = datetime.fromisoformat(deadline_str.replace('Z', '+00:00'))
-                now = datetime.now(timezone.utc)
-                time_until = deadline - now
-                hours_until = time_until.total_seconds() / 3600
-                gw_number = neste_gw.get('id', 0)
-                
-                print(f'Neste deadline: {deadline}')
-                print(f'Timer til deadline: {hours_until:.1f}')
-                print(f'Force send: {force_send}')
-                
-                if force_send:
-                    print('FORCE SEND AKTIVERT!')
-                    open('send_email.txt', 'w').write('true')
-                    open('gw_number.txt', 'w').write(str(gw_number))
-                    open('hours_until.txt', 'w').write(f'{hours_until:.0f}')
-                elif hours_until <= 24 and hours_until > 23:
-                    print('SEND_EMAIL=true (mellom 23-24 timer til deadline)')
-                    open('send_email.txt', 'w').write('true')
-                    open('gw_number.txt', 'w').write(str(gw_number))
-                    open('hours_until.txt', 'w').write(f'{hours_until:.0f}')
-                else:
-                    print(f'Ikke i vinduet 23-24 timer til deadline - sender ikke ukentlig mail')
-                    open('send_email.txt', 'w').write('false')
-            else:
-                print('Ingen kommende gameweek funnet')
-                open('send_email.txt', 'w').write('false')
-        except Exception as e:
-            print(f'Feil ved API-kall: {e}')
-            open('send_email.txt', 'w').write('false')
-        "
-    
-    - name: Set email flag
-      id: set_flag
-      run: |
-        SEND_EMAIL=$(cat send_email.txt)
-        echo "send_email=$SEND_EMAIL" >> $GITHUB_OUTPUT
-        echo "Send weekly email: $SEND_EMAIL"
-        
-        if [ "$SEND_EMAIL" = "true" ]; then
-          GW_NUMBER=$(cat gw_number.txt)
-          HOURS_UNTIL=$(cat hours_until.txt)
-          echo "gw_number=$GW_NUMBER" >> $GITHUB_OUTPUT
-          echo "hours_until=$HOURS_UNTIL" >> $GITHUB_OUTPUT
-        fi
-    
-    - name: Run FPL analysis for all subscribers
-      if: steps.set_flag.outputs.send_email == 'true'
-      run: |
-        echo "=== Generating weekly reports ==="
-        python fpl_analyzer.py --subscribers subscribers.json 2>&1 | tee console_output.txt
-    
-    - name: Send weekly emails to all subscribers
-      if: steps.set_flag.outputs.send_email == 'true'
-      env:
-        EMAIL_USERNAME: ${{ secrets.EMAIL_USERNAME }}
-        EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
-        GW_NUMBER: ${{ steps.set_flag.outputs.gw_number }}
-        HOURS_UNTIL: ${{ steps.set_flag.outputs.hours_until }}
-      run: python3 send_emails.py
-    
-    - name: Upload reports as artifact
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: fpl-reports-${{ github.run_number }}
-        path: |
-          reports/
-          console_output.txt
-          welcome_console.txt
-          generated_reports.json
-          welcome_reports.json
-          subscribers.json
-          new_subscribers.json
-        retention-days: 30
-        if-no-files-found: ignore
+      - name: Kjør data-agent
+        env:
+          FORCE_SEND: ${{ github.event.inputs.force_send || 'false' }}
+        run: python agent_data.py
+
+      - name: Les status-outputs
+        id: les-status
+        run: |
+          SEND=$(python -c "import json; d=json.load(open('deadline_status.json')); print(str(d['send_weekly']).lower())")
+          GW=$(python -c "import json; d=json.load(open('deadline_status.json')); print(d.get('gw_number',''))")
+          HOURS=$(python -c "import json; d=json.load(open('deadline_status.json')); print(d.get('hours_until',''))")
+          HAS_NEW=$(cat has_new_subscribers.txt)
+          echo "send_weekly=$SEND"    >> $GITHUB_OUTPUT
+          echo "gw_number=$GW"        >> $GITHUB_OUTPUT
+          echo "hours_until=$HOURS"   >> $GITHUB_OUTPUT
+          echo "has_new=$HAS_NEW"     >> $GITHUB_OUTPUT
+          echo "→ send_weekly=$SEND | gw=$GW | hours=$HOURS | has_new=$HAS_NEW"
+
+      - name: Last opp data-artifakter
+        uses: actions/upload-artifact@v4
+        with:
+          name: agent1-data
+          path: |
+            fpl_raw_data.json
+            subscribers.json
+            new_subscribers.json
+            has_new_subscribers.txt
+            deadline_status.json
+          retention-days: 1
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# AGENT 2 – ANALYSE
+# Beregner scores og rangeringer fra rådata.
+# Kjører kun hvis vi skal sende ukentlig ELLER det finnes nye abonnenter.
+# ─────────────────────────────────────────────────────────────────────────────
+  agent-analyse:
+    name: "🤖 Agent 2 – Analyse"
+    runs-on: ubuntu-latest
+    needs: agent-data
+    if: |
+      needs.agent-data.outputs.send_weekly == 'true' ||
+      needs.agent-data.outputs.has_new == 'true'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Installer avhengigheter
+        run: pip install -r requirements.txt
+
+      - name: Last ned data fra Agent 1
+        uses: actions/download-artifact@v4
+        with:
+          name: agent1-data
+
+      - name: Kjør analyse-agent
+        run: python agent_analyse.py
+
+      - name: Last opp analyse-artifakter
+        uses: actions/upload-artifact@v4
+        with:
+          name: agent2-analyse
+          path: fpl_analysis.json
+          retention-days: 1
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# AGENT 3A – RAPPORT (VELKOMST)
+# Genererer HTML-rapporter kun for nye abonnenter.
+# ─────────────────────────────────────────────────────────────────────────────
+  agent-rapport-welcome:
+    name: "🤖 Agent 3a – Rapport (velkomst)"
+    runs-on: ubuntu-latest
+    needs: [agent-data, agent-analyse]
+    if: needs.agent-data.outputs.has_new == 'true'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Installer avhengigheter
+        run: pip install -r requirements.txt
+
+      - name: Last ned data fra Agent 1 og 2
+        uses: actions/download-artifact@v4
+        with:
+          pattern: agent{1,2}-*
+          merge-multiple: true
+
+      - name: Kjør rapport-agent (velkomst)
+        run: python agent_rapport.py --welcome
+
+      - name: Last opp velkomst-rapporter
+        uses: actions/upload-artifact@v4
+        with:
+          name: agent3a-welcome-reports
+          path: |
+            welcome_reports.json
+            reports/
+          retention-days: 7
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# AGENT 3B – RAPPORT (UKENTLIG)
+# Genererer HTML-rapporter for alle abonnenter.
+# ─────────────────────────────────────────────────────────────────────────────
+  agent-rapport-weekly:
+    name: "🤖 Agent 3b – Rapport (ukentlig)"
+    runs-on: ubuntu-latest
+    needs: [agent-data, agent-analyse]
+    if: needs.agent-data.outputs.send_weekly == 'true'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Installer avhengigheter
+        run: pip install -r requirements.txt
+
+      - name: Last ned data fra Agent 1 og 2
+        uses: actions/download-artifact@v4
+        with:
+          pattern: agent{1,2}-*
+          merge-multiple: true
+
+      - name: Kjør rapport-agent (ukentlig)
+        run: python agent_rapport.py
+
+      - name: Last opp ukentlige rapporter
+        uses: actions/upload-artifact@v4
+        with:
+          name: agent3b-weekly-reports
+          path: |
+            generated_reports.json
+            reports/
+          retention-days: 30
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# AGENT 4A – LEVERING (VELKOMST)
+# Sender velkomst-e-poster og oppdaterer Firebase.
+# ─────────────────────────────────────────────────────────────────────────────
+  agent-levering-welcome:
+    name: "🤖 Agent 4a – Levering (velkomst)"
+    runs-on: ubuntu-latest
+    needs: [agent-data, agent-rapport-welcome]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Installer avhengigheter
+        run: pip install -r requirements.txt
+
+      - name: Last ned data og rapporter
+        uses: actions/download-artifact@v4
+        with:
+          pattern: agent{1,3a}-*
+          merge-multiple: true
+
+      - name: Kjør levering-agent (velkomst)
+        env:
+          EMAIL_USERNAME: ${{ secrets.EMAIL_USERNAME }}
+          EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+        run: python agent_levering.py --welcome
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# AGENT 4B – LEVERING (UKENTLIG)
+# Sender ukentlige e-poster til alle abonnenter.
+# ─────────────────────────────────────────────────────────────────────────────
+  agent-levering-weekly:
+    name: "🤖 Agent 4b – Levering (ukentlig)"
+    runs-on: ubuntu-latest
+    needs: [agent-data, agent-rapport-weekly]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Installer avhengigheter
+        run: pip install -r requirements.txt
+
+      - name: Last ned data og rapporter
+        uses: actions/download-artifact@v4
+        with:
+          pattern: agent{1,3b}-*
+          merge-multiple: true
+
+      - name: Kjør levering-agent (ukentlig)
+        env:
+          EMAIL_USERNAME: ${{ secrets.EMAIL_USERNAME }}
+          EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+          GW_NUMBER:      ${{ needs.agent-data.outputs.gw_number }}
+          HOURS_UNTIL:    ${{ needs.agent-data.outputs.hours_until }}
+        run: python agent_levering.py
