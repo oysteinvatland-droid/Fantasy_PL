@@ -105,17 +105,17 @@ def hent_spiller_historikk_batch(player_ids, max_workers=15):
 
 
 def hent_abonnenter():
-    """Henter abonnenter fra Firebase Firestore"""
+    """Henter abonnenter fra Firebase Firestore."""
     print("📡 Henter abonnenter fra Firebase...")
     try:
         response = requests.get(FIRESTORE_URL, timeout=30)
         if response.status_code != 200:
-            print(f"⚠️ Firebase returnerte {response.status_code}")
-            return [], []
+            print(f"❌ Firebase returnerte {response.status_code}: {response.text[:300]}")
+            return [], [], False
         data = response.json()
     except Exception as e:
-        print(f"⚠️ Firebase-feil: {e}")
-        return [], []
+        print(f"❌ Firebase-feil: {e}")
+        return [], [], False
 
     subscribers, new_subscribers = split_subscribers(data.get('documents', []))
 
@@ -127,7 +127,7 @@ def hent_abonnenter():
             print(f"  ✓ {sub['name']} ({sub['email']})")
 
     print(f"✓ {len(subscribers)} abonnenter totalt, {len(new_subscribers)} nye")
-    return subscribers, new_subscribers
+    return subscribers, new_subscribers, True
 
 
 def sjekk_deadline(bootstrap_data, force_send=False):
@@ -175,7 +175,11 @@ if __name__ == "__main__":
     print("=" * 60)
 
     # 1. Hent abonnenter fra Firebase
-    subscribers, new_subscribers = hent_abonnenter()
+    subscribers, new_subscribers, firebase_ok = hent_abonnenter()
+
+    if not firebase_ok:
+        print('❌ Avbryter: kunne ikke hente abonnenter fra Firebase. Sjekk Firestore-regler/App Check.')
+        sys.exit(1)
 
     write_json('subscribers.json', subscribers)
     write_json('new_subscribers.json', new_subscribers)
