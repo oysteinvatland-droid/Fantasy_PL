@@ -59,6 +59,25 @@ Repositoryet er satt opp med GitHub Actions som sender deg en FPL-rapport på e-
    
    Gå til: Actions → FPL Weekly Report → Run workflow
 
+
+## ✅ Drifts-sjekkliste (GitHub Actions)
+
+Hvis workflow kjører grønt men du ikke får e-post, sjekk dette:
+
+1. **Secrets**
+   - `EMAIL_USERNAME` og `EMAIL_PASSWORD` må være satt i repo-secrets.
+
+2. **Firestore-tilgang**
+   - Firestore-regler må tillate pipeline-kallene, ellers får du tomme abonnentlister eller tidlig stopp.
+   - Se etter Firebase-feil i `Agent 1 – Data` loggen.
+
+3. **Rapport-manifest**
+   - Sjekk artifact `generated_reports.json` (ukentlig) / `welcome_reports.json` (velkomst).
+   - Hvis filen er tom (`[]`), blir ingen e-post sendt.
+
+4. **Deadline-vindu**
+   - Ukentlig sending kjører i tidsvinduet (eller med `force_send=true` i manuelt run).
+
 ## 🖥️ Lokal kjøring
 
 ### Installer avhengigheter
