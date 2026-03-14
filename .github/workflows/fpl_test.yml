@@ -57,6 +57,8 @@ jobs:
       - name: Kjør agent_data.py
         env:
           FORCE_SEND: ${{ github.event.inputs.force_send }}
+          FIREBASE_BEARER_TOKEN: ${{ secrets.FIREBASE_BEARER_TOKEN }}
+          FIREBASE_REQUIRE_AUTH: ${{ vars.FIREBASE_REQUIRE_AUTH || 'false' }}
         run: python agent_data.py
 
       - name: Les outputs
@@ -305,6 +307,8 @@ jobs:
           EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
           GW_NUMBER:      ${{ needs.test-agent-data.outputs.gw_number }}
           HOURS_UNTIL:    ${{ needs.test-agent-data.outputs.hours_until }}
+          FIREBASE_BEARER_TOKEN: ${{ secrets.FIREBASE_BEARER_TOKEN }}
+          FIREBASE_REQUIRE_AUTH: ${{ vars.FIREBASE_REQUIRE_AUTH || 'false' }}
         run: python agent_levering.py
 
       - name: Kjør levering-agent (velkomst)
@@ -312,4 +316,6 @@ jobs:
         env:
           EMAIL_USERNAME: ${{ secrets.EMAIL_USERNAME }}
           EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+          FIREBASE_BEARER_TOKEN: ${{ secrets.FIREBASE_BEARER_TOKEN }}
+          FIREBASE_REQUIRE_AUTH: ${{ vars.FIREBASE_REQUIRE_AUTH || 'false' }}
         run: python agent_levering.py --welcome

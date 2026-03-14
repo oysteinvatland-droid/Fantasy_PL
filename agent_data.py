@@ -108,7 +108,7 @@ def hent_abonnenter():
     """Henter abonnenter fra Firebase Firestore."""
     print("📡 Henter abonnenter fra Firebase...")
     try:
-        response = requests.get(FIRESTORE_URL, timeout=30)
+        response = requests.get(FIRESTORE_URL, headers=firestore_headers(), timeout=30)
         if response.status_code != 200:
             print(f"❌ Firebase returnerte {response.status_code}: {response.text[:300]}")
             return [], [], False

@@ -74,7 +74,7 @@ def send_rapporter(reports, emne, fra="FPL Analyse <kontakt@fplanalyse.no>"):
     """Sender HTML-rapporter til alle i listen"""
     if not reports:
         print("ℹ️ Ingen rapporter å sende")
-        return 0
+        return 0, 0
 
     server, _username = koble_til_smtp()
     sendt = 0
@@ -108,7 +108,7 @@ def send_rapporter(reports, emne, fra="FPL Analyse <kontakt@fplanalyse.no>"):
         print(f"✓ SMTP-tilkobling lukket")
 
     print(f"\n📊 Resultat: {sendt} sendt, {feil} feil")
-    return sendt
+    return sendt, feil
 
 
 def oppdater_firebase_welcome_sent(welcome_reports, new_subscribers):
@@ -160,6 +160,7 @@ if __name__ == "__main__":
     if args.welcome:
         if not reports:
             print("ℹ️ Ingen velkomst-rapporter å sende")
+            write_json('delivery_status.json', {'mode': 'welcome', 'reports': 0, 'sent': 0, 'failed': 0, 'skipped': True})
             sys.exit(0)
 
         sendt = send_rapporter(reports, config['subject'])
@@ -172,6 +173,7 @@ if __name__ == "__main__":
     else:
         if not reports:
             print("ℹ️ Ingen ukentlige rapporter å sende")
+            write_json('delivery_status.json', {'mode': 'weekly', 'reports': 0, 'sent': 0, 'failed': 0, 'skipped': True})
             sys.exit(0)
 
         sendt = send_rapporter(reports, config['subject'])
