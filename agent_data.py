@@ -19,7 +19,8 @@ import urllib3
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 
-from pipeline_shared.firestore import split_subscribers, subscribers_collection_url
+from pipeline_shared.firestore import firestore_headers, split_subscribers, subscribers_collection_url
+
 from pipeline_shared.io import write_json, write_text
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
