@@ -66,10 +66,9 @@ def test_send_reports_sends_one_email_per_report(monkeypatch, tmp_path: Path):
         {"name": "B", "email": "b@example.com", "report_file": str(report_b)},
     ]
 
-    sent_count, fail_count = send_rapporter(reports, "Testemne")
+    sent_count = send_rapporter(reports, "Testemne")
 
     assert sent_count == 2
-    assert fail_count == 0
     assert len(smtp.sendmail_calls) == 2
     assert smtp.closed is True
 
