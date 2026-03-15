@@ -30,12 +30,34 @@ on:
 
 jobs:
 
+
+# ─────────────────────────────────────────────────────────────────────────────
+# UNIT TESTS
+# ─────────────────────────────────────────────────────────────────────────────
+  test-unit:
+    name: "🧪 Unit tests"
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Installer avhengigheter
+        run: pip install -r requirements.txt
+
+      - name: Kjør pytest
+        run: pytest -q
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # AGENT 1 – DATA
 # ─────────────────────────────────────────────────────────────────────────────
   test-agent-data:
     name: "🧪 Agent 1 – Data"
     runs-on: ubuntu-latest
+    needs: test-unit
     if: |
       contains(github.event.inputs.agent, 'Agent 1') ||
       github.event.inputs.agent == 'Kjør alle agenter (full pipeline)'
