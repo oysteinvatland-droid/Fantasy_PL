@@ -30,12 +30,34 @@ on:
 
 jobs:
 
+
+# ─────────────────────────────────────────────────────────────────────────────
+# UNIT TESTS
+# ─────────────────────────────────────────────────────────────────────────────
+  test-unit:
+    name: "🧪 Unit tests"
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Installer avhengigheter
+        run: pip install -r requirements.txt
+
+      - name: Kjør pytest
+        run: pytest -q
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # AGENT 1 – DATA
 # ─────────────────────────────────────────────────────────────────────────────
   test-agent-data:
     name: "🧪 Agent 1 – Data"
     runs-on: ubuntu-latest
+    needs: test-unit
     if: |
       contains(github.event.inputs.agent, 'Agent 1') ||
       github.event.inputs.agent == 'Kjør alle agenter (full pipeline)'
@@ -57,6 +79,8 @@ jobs:
       - name: Kjør agent_data.py
         env:
           FORCE_SEND: ${{ github.event.inputs.force_send }}
+          FIREBASE_BEARER_TOKEN: ${{ secrets.FIREBASE_BEARER_TOKEN }}
+          FIREBASE_REQUIRE_AUTH: ${{ vars.FIREBASE_REQUIRE_AUTH || 'false' }}
         run: python agent_data.py
 
       - name: Les outputs
@@ -305,6 +329,8 @@ jobs:
           EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
           GW_NUMBER:      ${{ needs.test-agent-data.outputs.gw_number }}
           HOURS_UNTIL:    ${{ needs.test-agent-data.outputs.hours_until }}
+          FIREBASE_BEARER_TOKEN: ${{ secrets.FIREBASE_BEARER_TOKEN }}
+          FIREBASE_REQUIRE_AUTH: ${{ vars.FIREBASE_REQUIRE_AUTH || 'false' }}
         run: python agent_levering.py
 
       - name: Kjør levering-agent (velkomst)
@@ -312,4 +338,6 @@ jobs:
         env:
           EMAIL_USERNAME: ${{ secrets.EMAIL_USERNAME }}
           EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+          FIREBASE_BEARER_TOKEN: ${{ secrets.FIREBASE_BEARER_TOKEN }}
+          FIREBASE_REQUIRE_AUTH: ${{ vars.FIREBASE_REQUIRE_AUTH || 'false' }}
         run: python agent_levering.py --welcome

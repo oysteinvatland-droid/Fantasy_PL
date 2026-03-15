@@ -13,6 +13,18 @@ on:
         options:
           - 'false'
           - 'true'
+      dry_run:
+        description: 'Generer rapporter men hopp over faktisk e-postsending'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'false'
+          - 'true'
+      test_email_override:
+        description: 'Overstyr mottaker for manuell test (valgfritt)'
+        required: false
+        default: ''
 
 # ─────────────────────────────────────────────────────────────────────────────
 # AGENT 1 – DATA
@@ -42,6 +54,8 @@ jobs:
       - name: Kjør data-agent
         env:
           FORCE_SEND: ${{ github.event.inputs.force_send || 'false' }}
+          FIREBASE_BEARER_TOKEN: ${{ secrets.FIREBASE_BEARER_TOKEN }}
+          FIREBASE_REQUIRE_AUTH: ${{ vars.FIREBASE_REQUIRE_AUTH || 'false' }}
         run: python agent_data.py
 
       - name: Les status-outputs
@@ -67,7 +81,19 @@ jobs:
             new_subscribers.json
             has_new_subscribers.txt
             deadline_status.json
+            agent1_status.json
           retention-days: 1
+      - name: Oppsummering Agent 1
+        run: |
+          python - <<'PY'
+          import json, os
+          s = json.load(open('agent1_status.json'))
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a', encoding='utf-8') as out:
+              out.write('## Agent 1 – Data\n')
+              out.write('- Firebase OK: **{}**\n'.format(s['firebase_ok']))
+              out.write('- Subscribers: **{}** (new: {})\n'.format(s['subscriber_count'], s['new_subscriber_count']))
+              out.write('- send_weekly: **{}**\n'.format(s['send_weekly']))
+          PY
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -186,6 +212,16 @@ jobs:
             reports/
           retention-days: 30
 
+      - name: Oppsummering Agent 3b
+        run: |
+          python - <<'PY'
+          import json, os
+          reports = json.load(open('generated_reports.json'))
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a', encoding='utf-8') as out:
+              out.write('## Agent 3b – Rapport (ukentlig)\n')
+              out.write('- Generated reports: **{}**\n'.format(len(reports)))
+          PY
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # AGENT 4A – LEVERING (VELKOMST)
@@ -195,6 +231,7 @@ jobs:
     name: "🤖 Agent 4a – Levering (velkomst)"
     runs-on: ubuntu-latest
     needs: [agent-data, agent-rapport-welcome]
+    if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.dry_run != 'true' }}
 
     steps:
       - uses: actions/checkout@v4
@@ -212,11 +249,47 @@ jobs:
           pattern: agent{1,3a}-*
           merge-multiple: true
 
+      - name: Overstyr e-post ved manuell test (valgfritt)
+        if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.test_email_override != '' }}
+        run: |
+          TEST_EMAIL="${{ github.event.inputs.test_email_override }}"
+          python - <<'PY'
+          import json, os
+          test_email = os.environ['TEST_EMAIL']
+          try:
+              reports = json.load(open('welcome_reports.json'))
+          except FileNotFoundError:
+              reports = []
+          for r in reports:
+              r['email'] = test_email
+          json.dump(reports, open('welcome_reports.json', 'w'), indent=2)
+          print('Overstyrte {} velkomstrapporter til {}'.format(len(reports), test_email))
+          PY
+
       - name: Kjør levering-agent (velkomst)
         env:
           EMAIL_USERNAME: ${{ secrets.EMAIL_USERNAME }}
           EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+          FIREBASE_BEARER_TOKEN: ${{ secrets.FIREBASE_BEARER_TOKEN }}
+          FIREBASE_REQUIRE_AUTH: ${{ vars.FIREBASE_REQUIRE_AUTH || 'false' }}
         run: python agent_levering.py --welcome
+
+      - name: Last opp levering-status (velkomst)
+        uses: actions/upload-artifact@v4
+        with:
+          name: agent4a-delivery-status
+          path: delivery_status.json
+          retention-days: 7
+
+      - name: Oppsummering Agent 4a
+        run: |
+          python - <<'PY'
+          import json, os
+          s = json.load(open('delivery_status.json'))
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a', encoding='utf-8') as out:
+              out.write('## Agent 4a – Levering (velkomst)\n')
+              out.write('- Reports: **{}**, sent: **{}**, failed: **{}**, skipped: {}\n'.format(s['reports'], s['sent'], s['failed'], s['skipped']))
+          PY
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -227,6 +300,7 @@ jobs:
     name: "🤖 Agent 4b – Levering (ukentlig)"
     runs-on: ubuntu-latest
     needs: [agent-data, agent-rapport-weekly]
+    if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.dry_run != 'true' }}
 
     steps:
       - uses: actions/checkout@v4
@@ -244,10 +318,43 @@ jobs:
           pattern: agent{1,3b}-*
           merge-multiple: true
 
+      - name: Overstyr e-post ved manuell test (valgfritt)
+        if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.test_email_override != '' }}
+        run: |
+          TEST_EMAIL="${{ github.event.inputs.test_email_override }}"
+          python - <<'PY'
+          import json, os
+          test_email = os.environ['TEST_EMAIL']
+          reports = json.load(open('generated_reports.json'))
+          for r in reports:
+              r['email'] = test_email
+          json.dump(reports, open('generated_reports.json', 'w'), indent=2)
+          print('Overstyrte {} ukentlige rapporter til {}'.format(len(reports), test_email))
+          PY
+
       - name: Kjør levering-agent (ukentlig)
         env:
           EMAIL_USERNAME: ${{ secrets.EMAIL_USERNAME }}
           EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
           GW_NUMBER:      ${{ needs.agent-data.outputs.gw_number }}
           HOURS_UNTIL:    ${{ needs.agent-data.outputs.hours_until }}
+          FIREBASE_BEARER_TOKEN: ${{ secrets.FIREBASE_BEARER_TOKEN }}
+          FIREBASE_REQUIRE_AUTH: ${{ vars.FIREBASE_REQUIRE_AUTH || 'false' }}
         run: python agent_levering.py
+
+      - name: Last opp levering-status (ukentlig)
+        uses: actions/upload-artifact@v4
+        with:
+          name: agent4b-delivery-status
+          path: delivery_status.json
+          retention-days: 30
+
+      - name: Oppsummering Agent 4b
+        run: |
+          python - <<'PY'
+          import json, os
+          s = json.load(open('delivery_status.json'))
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a', encoding='utf-8') as out:
+              out.write('## Agent 4b – Levering (ukentlig)\n')
+              out.write('- Reports: **{}**, sent: **{}**, failed: **{}**, skipped: {}\n'.format(s['reports'], s['sent'], s['failed'], s['skipped']))
+          PY
