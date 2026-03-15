@@ -19,26 +19,14 @@ import urllib3
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 
-from pipeline_shared import firestore as firestore_utils
+from pipeline_shared.firestore import firestore_headers, split_subscribers, subscribers_collection_url
+
 from pipeline_shared.io import write_json, write_text
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 BASE_URL = "https://fantasy.premierleague.com/api/"
-FIRESTORE_URL = firestore_utils.subscribers_collection_url()
-
-
-def hent_firestore_headers():
-    """Backward-compatible wrapper for Firestore auth headers."""
-    if hasattr(firestore_utils, 'firestore_headers'):
-        return firestore_utils.firestore_headers()
-
-    # Fallback for older module versions without firestore_headers
-    token = os.environ.get('FIREBASE_BEARER_TOKEN', '').strip()
-    require_auth = os.environ.get('FIREBASE_REQUIRE_AUTH', 'false').lower() == 'true'
-    if require_auth and not token:
-        raise RuntimeError('FIREBASE_REQUIRE_AUTH=true men FIREBASE_BEARER_TOKEN mangler')
-    return {'Authorization': f'Bearer {token}'} if token else {}
+FIRESTORE_URL = subscribers_collection_url()
 
 # ─── Hjelpefunksjoner ────────────────────────────────────────────────────────
 
@@ -121,7 +109,7 @@ def hent_abonnenter():
     """Henter abonnenter fra Firebase Firestore."""
     print("📡 Henter abonnenter fra Firebase...")
     try:
-        response = requests.get(FIRESTORE_URL, headers=hent_firestore_headers(), timeout=30)
+        response = requests.get(FIRESTORE_URL, headers=firestore_headers(), timeout=30)
         if response.status_code != 200:
             print(f"❌ Firebase returnerte {response.status_code}: {response.text[:300]}")
             return [], [], False
@@ -130,7 +118,7 @@ def hent_abonnenter():
         print(f"❌ Firebase-feil: {e}")
         return [], [], False
 
-    subscribers, new_subscribers = firestore_utils.split_subscribers(data.get('documents', []))
+    subscribers, new_subscribers = split_subscribers(data.get('documents', []))
 
     new_emails = {sub['email'].lower() for sub in new_subscribers}
     for sub in subscribers:
@@ -220,15 +208,6 @@ if __name__ == "__main__":
     }
 
     write_json('fpl_raw_data.json', raw_data, indent=None)
-
-    write_json('agent1_status.json', {
-        'firebase_ok': firebase_ok,
-        'subscriber_count': len(subscribers),
-        'new_subscriber_count': len(new_subscribers),
-        'player_count': len(player_ids),
-        'fixture_count': len(fixtures),
-        'send_weekly': deadline_status['send_weekly'],
-    })
 
     print("\n" + "=" * 60)
     print("✅ AGENT 1 FULLFØRT")

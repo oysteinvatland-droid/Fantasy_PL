@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import os
 from typing import Any
 
 import requests
@@ -15,25 +14,6 @@ def subscribers_collection_url(project_id: str = PROJECT_ID) -> str:
         f"https://firestore.googleapis.com/v1/projects/{project_id}"
         f"/databases/(default)/documents/subscribers"
     )
-
-
-def firestore_headers() -> dict[str, str]:
-    """Bygg headers for Firestore-kall.
-
-    Støtter valgfri bearer-token auth via miljøvariabelen
-    FIREBASE_BEARER_TOKEN. Hvis FIREBASE_REQUIRE_AUTH=true, kreves token.
-    """
-    token = os.environ.get('FIREBASE_BEARER_TOKEN', '').strip()
-    require_auth = os.environ.get('FIREBASE_REQUIRE_AUTH', 'false').lower() == 'true'
-
-    if require_auth and not token:
-        raise RuntimeError(
-            "FIREBASE_REQUIRE_AUTH=true men FIREBASE_BEARER_TOKEN mangler"
-        )
-
-    if token:
-        return {'Authorization': f'Bearer {token}'}
-    return {}
 
 
 def parse_team_id(team_id_field: dict[str, Any]) -> int:
@@ -102,5 +82,5 @@ def mark_welcome_sent(doc_id: str, project_id: str = PROJECT_ID, timeout: int = 
     )
     payload = {"fields": {"welcome_sent": {"booleanValue": True}}}
 
-    response = requests.patch(url, json=payload, headers=firestore_headers(), timeout=timeout)
+    response = requests.patch(url, json=payload, timeout=timeout)
     return response.status_code == 200
