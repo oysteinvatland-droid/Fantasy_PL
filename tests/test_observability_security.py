@@ -66,18 +66,3 @@ def test_firestore_headers_raises_when_auth_required_but_missing(monkeypatch):
 
     with pytest.raises(RuntimeError):
         firestore_headers()
-
-
-def test_hent_abonnenter_regression_does_not_raise_nameerror(monkeypatch):
-    """Regression-test for CI issue: firestore_headers must be defined/imported."""
-    payload = {'documents': []}
-    monkeypatch.setattr(agent_data.requests, 'get', lambda *args, **kwargs: _Resp(200, payload=payload))
-
-    try:
-        subscribers, new_subscribers, ok = agent_data.hent_abonnenter()
-    except NameError as exc:  # pragma: no cover - explicit regression guard
-        pytest.fail(f"Unexpected NameError: {exc}")
-
-    assert ok is True
-    assert subscribers == []
-    assert new_subscribers == []

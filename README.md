@@ -78,20 +78,6 @@ Hvis workflow kjører grønt men du ikke får e-post, sjekk dette:
 4. **Deadline-vindu**
    - Ukentlig sending kjører i tidsvinduet (eller med `force_send=true` i manuelt run).
 
-
-### 🧭 Runbook: Første 5 minutter ved feil
-
-1. **Sjekk Agent 1 – Data**
-   - Hvis jobben feiler med Firebase-feil, valider Firestore-regler/App Check og `FIREBASE_BEARER_TOKEN` secret.
-2. **Sjekk artifacts**
-   - `subscribers.json`, `generated_reports.json`, `welcome_reports.json`, `delivery_status.json`.
-3. **Sjekk delivery-status**
-   - `delivery_status.json` viser `reports`, `sent`, `failed`, `skipped`.
-4. **Sjekk manuell testmodus**
-   - Ved `workflow_dispatch` kan du bruke `dry_run=true` og `test_email_override` for trygg verifisering.
-5. **Sjekk sikkerhetsoppsett**
-   - Sett repo-variable `FIREBASE_REQUIRE_AUTH=true` når auth er konfigurert, slik at pipeline feiler tydelig ved manglende token.
-
 ## 🖥️ Lokal kjøring
 
 ### Installer avhengigheter

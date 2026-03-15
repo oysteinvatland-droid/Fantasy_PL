@@ -20,6 +20,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 
 from pipeline_shared.firestore import firestore_headers, split_subscribers, subscribers_collection_url
+
 from pipeline_shared.io import write_json, write_text
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -207,15 +208,6 @@ if __name__ == "__main__":
     }
 
     write_json('fpl_raw_data.json', raw_data, indent=None)
-
-    write_json('agent1_status.json', {
-        'firebase_ok': firebase_ok,
-        'subscriber_count': len(subscribers),
-        'new_subscriber_count': len(new_subscribers),
-        'player_count': len(player_ids),
-        'fixture_count': len(fixtures),
-        'send_weekly': deadline_status['send_weekly'],
-    })
 
     print("\n" + "=" * 60)
     print("✅ AGENT 1 FULLFØRT")
