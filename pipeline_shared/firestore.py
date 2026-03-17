@@ -2,11 +2,29 @@
 
 from __future__ import annotations
 
+import os
 from typing import Any
 
 import requests
 
 PROJECT_ID = "fpl-ai-analyzer"
+
+
+def firestore_headers() -> dict[str, str]:
+    """Returnerer auth-headers for Firestore REST API.
+
+    Henter bearer-token fra FIREBASE_BEARER_TOKEN. Hvis tokenet mangler og
+    FIREBASE_REQUIRE_AUTH=true kastes RuntimeError; ellers returneres tomme headers.
+    """
+    token = os.environ.get('FIREBASE_BEARER_TOKEN', '')
+    require_auth = os.environ.get('FIREBASE_REQUIRE_AUTH', 'false').lower() == 'true'
+
+    if not token and require_auth:
+        raise RuntimeError(
+            "FIREBASE_BEARER_TOKEN er ikke satt, men FIREBASE_REQUIRE_AUTH=true"
+        )
+
+    return {'Authorization': f'Bearer {token}'} if token else {}
 
 
 def subscribers_collection_url(project_id: str = PROJECT_ID) -> str:
