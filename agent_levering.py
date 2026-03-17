@@ -22,7 +22,7 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
 from pipeline_shared.firestore import mark_welcome_sent
-from pipeline_shared.io import read_json
+from pipeline_shared.io import read_json, write_json
 
 
 # ─── Hjelpefunksjoner ─────────────────────────────────────────────────────────
@@ -163,7 +163,7 @@ if __name__ == "__main__":
             write_json('delivery_status.json', {'mode': 'welcome', 'reports': 0, 'sent': 0, 'failed': 0, 'skipped': True})
             sys.exit(0)
 
-        sendt = send_rapporter(reports, config['subject'])
+        sendt, feil = send_rapporter(reports, config['subject'])
 
         # Oppdater Firebase
         if sendt > 0:
@@ -176,7 +176,7 @@ if __name__ == "__main__":
             write_json('delivery_status.json', {'mode': 'weekly', 'reports': 0, 'sent': 0, 'failed': 0, 'skipped': True})
             sys.exit(0)
 
-        sendt = send_rapporter(reports, config['subject'])
+        sendt, feil = send_rapporter(reports, config['subject'])
 
     print("\n" + "=" * 60)
     print(f"✅ AGENT 4 FULLFØRT – {sendt} e-poster sendt")
