@@ -27,7 +27,7 @@ jobs:
           content = content.replace('__ANTHROPIC_API_KEY__', key)
           with open('fantasygame/index.html', 'w') as f:
               f.write(content)
-          if key in content:
+          if '__ANTHROPIC_API_KEY__' not in content:
               print('✅ API key injected successfully')
           else:
               print('⚠️ WARNING: placeholder not found in file')
@@ -39,5 +39,5 @@ jobs:
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: .
-          keep_files: true
+          publish_dir: ./fantasygame
+          force_orphan: true
