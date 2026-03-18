@@ -27,7 +27,7 @@ jobs:
           content = content.replace('__ANTHROPIC_API_KEY__', key)
           with open('fantasygame/index.html', 'w') as f:
               f.write(content)
-          if key in content:
+          if '__ANTHROPIC_API_KEY__' not in content:
               print('✅ API key injected successfully')
           else:
               print('⚠️ WARNING: placeholder not found in file')
