@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>⚔️ Fantasy Game Forge</title>
+<style>
+:root {
+  --gold: #f0c060;
+  --gold-dim: #a07820;
+  --bg: #080814;
+  --card: #10102a;
+  --border: #2a2a5a;
+  --text: #e8d5a3;
+  --muted: #6677aa;
+  --accent: #6030ee;
+  --sel-bg: #1a1050;
+  --sel-border: #f0c060;
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-top: env(safe-area-inset-top, 0px);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html {
+  height: 100%;
+  height: -webkit-fill-available;
+}
+body {
+  font-family: Georgia, serif;
+  background: var(--bg);
+  color: var(--text);
+  height: 100%;
+  height: -webkit-fill-available;
+  overflow: hidden;
+  background-image:
+    radial-gradient(ellipse at 20% 0%, #1a0a3a 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 100%, #0a1a3a 0%, transparent 60%);
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+body::before {
+  content: '';
+  position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  background-image:
+    radial-gradient(1px 1px at 10% 15%, #fff 0%, transparent 100%),
+    radial-gradient(1px 1px at 25%  5%, #fff 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 40% 25%, #fff 0%, transparent 100%),
+    radial-gradient(1px 1px at 55%  8%, #fff 0%, transparent 100%),
+    radial-gradient(1px 1px at 70% 18%, #fff 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 85%  5%, #fff 0%, transparent 100%),
+    radial-gradient(1px 1px at  5% 45%, #fff 0%, transparent 100%),
+    radial-gradient(1px 1px at 30% 40%, #fff 0%, transparent 100%),
+    radial-gradient(1px 1px at 60% 50%, #fff 0%, transparent 100%),
+    radial-gradient(1px 1px at 90% 35%, #fff 0%, transparent 100%),
+    radial-gradient(1px 1px at 15% 70%, #fff 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 45% 65%, #fff 0%, transparent 100%),
+    radial-gradient(1px 1px at 75% 60%, #fff 0%, transparent 100%),
+    radial-gradient(1px 1px at 20% 85%, #fff 0%, transparent 100%),
+    radial-gradient(1px 1px at 50% 80%, #fff 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 80% 90%, #fff 0%, transparent 100%),
+    radial-gradient(1px 1px at 95% 75%, #fff 0%, transparent 100%);
+  opacity: 0.35;
+}
+
+/* ── SCREENS ── */
+.screen {
+  display: none;
+  position: fixed; inset: 0;
+  flex-direction: column;
+  z-index: 1;
+}
+.screen.active { display: flex; }
+
+/* ── QUESTIONS ── */
+#screen-questions {
+  padding-top: var(--safe-top);
+}
+.q-header {
+  flex-shrink: 0;
+  padding: 16px 20px 12px;
+  text-align: center;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+}
+.q-header-title { font-size: 20px; color: var(--gold); letter-spacing: 1px; }
+.q-header-sub { font-size: 12px; color: var(--muted); font-family: sans-serif; margin-top: 3px; }
+.q-progress { display: flex; gap: 6px; justify-content: center; margin-top: 10px; }
+.q-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border); transition: background 0.3s; }
+.q-dot.done { background: var(--gold); }
+
+.q-scroll {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: calc(80px + var(--safe-bottom));
+}
+.q-section { padding: 16px 16px 4px; }
+.q-label { font-size: 10px; text-transform: uppercase; letter-spacing: 2px; color: var(--muted); font-family: sans-serif; margin-bottom: 3px; }
+.q-title { font-size: 18px; color: var(--gold); margin-bottom: 12px; }
+.options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.option-btn {
+  background: var(--card);
+  border: 2px solid var(--border);
+  border-radius: 14px;
+  padding: 14px 10px;
+  cursor: pointer;
+  text-align: center;
+  transition: border-color 0.15s, background 0.15s, transform 0.1s;
+  display: flex; flex-direction: column; align-items: center; gap: 5px;
+  min-height: 90px;
+  user-select: none;
+}
+.option-btn.selected { border-color: var(--sel-border); background: var(--sel-bg); box-shadow: 0 0 14px #f0c06020; }
+.option-btn:active { transform: scale(0.95); }
+.opt-emoji { font-size: 28px; line-height: 1; }
+.opt-name { font-size: 14px; color: var(--text); line-height: 1.2; }
+.opt-desc { font-size: 11px; color: var(--muted); font-family: sans-serif; line-height: 1.3; }
+.q-divider { border: none; border-top: 1px solid var(--border); margin: 12px 16px 0; }
+
+.q-footer {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  padding: 12px 16px calc(12px + var(--safe-bottom));
+  background: linear-gradient(to top, var(--bg) 65%, transparent);
+  pointer-events: none;
+}
+.q-footer button { pointer-events: all; }
+.btn-gold {
+  width: 100%; padding: 16px;
+  background: linear-gradient(135deg, #a07020, #f0c060, #a07020);
+  border: none; border-radius: 14px;
+  color: #1a0a00; font-size: 18px; font-family: Georgia, serif; font-weight: bold;
+  cursor: pointer; letter-spacing: 1px;
+  transition: transform 0.1s, opacity 0.1s;
+  box-shadow: 0 4px 20px #f0c06044;
+  user-select: none;
+}
+.btn-gold:active { transform: scale(0.97); opacity: 0.9; }
+
+/* ── LOADING ── */
+#screen-loading {
+  align-items: center; justify-content: center; text-align: center; padding: 32px;
+  padding-top: calc(32px + var(--safe-top));
+  padding-bottom: calc(32px + var(--safe-bottom));
+}
+.loading-orb {
+  width: 72px; height: 72px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #8060ff, #2010aa);
+  box-shadow: 0 0 40px #6030ee88;
+  margin-bottom: 28px;
+  animation: pulse 2s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%,100% { transform: scale(1);   box-shadow: 0 0 40px #6030ee88; }
+  50%      { transform: scale(1.1); box-shadow: 0 0 60px #8050ffaa; }
+}
+.loading-title { font-size: 22px; color: var(--gold); margin-bottom: 10px; }
+.loading-msg {
+  font-size: 14px; color: var(--muted); font-family: sans-serif;
+  min-height: 44px; line-height: 1.6; transition: opacity 0.4s;
+}
+.loading-dots { display: flex; gap: 8px; justify-content: center; margin-top: 28px; }
+.loading-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); animation: bounce 1.2s ease-in-out infinite; }
+.loading-dot:nth-child(2) { animation-delay: 0.2s; }
+.loading-dot:nth-child(3) { animation-delay: 0.4s; }
+@keyframes bounce {
+  0%,80%,100% { transform: scale(0.6); opacity: 0.4; }
+  40%          { transform: scale(1);   opacity: 1; }
+}
+.loading-summary {
+  margin-top: 28px; background: var(--card); border: 1px solid var(--border);
+  border-radius: 14px; padding: 14px 20px; font-size: 13px; color: var(--muted);
+  font-family: sans-serif; line-height: 1.9; text-align: center; width: 100%; max-width: 320px;
+}
+.loading-summary span { color: var(--gold); }
+
+/* ── GAME ── */
+#screen-game { background: #000; }
+#game-frame {
+  flex: 1;
+  width: 100%; border: none; display: block;
+  min-height: 0;
+}
+.game-toolbar {
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 16px;
+  padding-bottom: var(--safe-bottom);
+  height: calc(52px + var(--safe-bottom));
+  background: #05050f;
+  border-top: 1px solid var(--border);
+  gap: 10px;
+}
+.game-label { font-size: 13px; color: var(--muted); font-family: sans-serif; flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.btn-sm {
+  padding: 10px 16px; background: var(--card); border: 1px solid var(--border);
+  border-radius: 10px; color: var(--text); font-size: 13px; font-family: sans-serif;
+  cursor: pointer; white-space: nowrap; flex-shrink: 0;
+  user-select: none;
+}
+.btn-sm:active { opacity: 0.7; }
+</style>
+</head>
+<body>
+
+<!-- ── QUESTIONS ── -->
+<div id="screen-questions" class="screen active">
+  <div class="q-header">
+    <div class="q-header-title">⚔️ Fantasy Game Forge</div>
+    <div class="q-header-sub">Shape your adventure in four choices</div>
+    <div class="q-progress" id="q-progress"></div>
+  </div>
+  <div class="q-scroll" id="q-scroll">
+    <div id="questions-body"></div>
+  </div>
+  <div class="q-footer">
+    <button class="btn-gold" id="generate-btn" onclick="handleGenerate()" style="display:none">
+      🔮 Forge My Game!
+    </button>
+  </div>
+</div>
+
+<!-- ── LOADING ── -->
+<div id="screen-loading" class="screen">
+  <div class="loading-orb"></div>
+  <div class="loading-title">Forging Your World…</div>
+  <div class="loading-msg" id="loading-msg">Consulting the ancient scrolls…</div>
+  <div class="loading-dots">
+    <div class="loading-dot"></div><div class="loading-dot"></div><div class="loading-dot"></div>
+  </div>
+  <div class="loading-summary" id="loading-summary"></div>
+</div>
+
+<!-- ── GAME ── -->
+<div id="screen-game" class="screen">
+  <iframe id="game-frame" allow="autoplay"></iframe>
+  <div class="game-toolbar">
+    <span class="game-label" id="game-label">Your Adventure</span>
+    <button class="btn-sm" onclick="goToQuestions()">🔮 New Game</button>
+  </div>
+</div>
+
+<script>
+const API_KEY = '__ANTHROPIC_API_KEY__';
+
+const QUESTIONS = [
+  {
+    id: 'hero', label: 'I. Your Hero', title: 'Choose Your Hero',
+    options: [
+      { id: 'Warrior',  emoji: '⚔️', name: 'Warrior', desc: 'Strong & fierce' },
+      { id: 'Mage',     emoji: '🔮', name: 'Mage',    desc: 'Master of spells' },
+      { id: 'Rogue',    emoji: '🗡️', name: 'Rogue',   desc: 'Swift & sneaky' },
+      { id: 'Ranger',   emoji: '🏹', name: 'Ranger',  desc: 'Ranged & agile' },
+    ]
+  },
+  {
+    id: 'world', label: 'II. Your World', title: 'Choose Your World',
+    options: [
+      { id: 'Dark Forest',    emoji: '🌲', name: 'Dark Forest', desc: 'Ancient & haunted' },
+      { id: 'Ancient Dungeon',emoji: '🏛️', name: 'Dungeon',     desc: 'Deep & treacherous' },
+      { id: 'Sky Realm',      emoji: '☁️', name: 'Sky Realm',   desc: 'High & perilous' },
+      { id: 'Frozen Wastes',  emoji: '❄️', name: 'Frozen Wastes',desc: 'Cold & deadly' },
+    ]
+  },
+  {
+    id: 'enemy', label: 'III. Your Enemy', title: 'Choose Your Enemy',
+    options: [
+      { id: 'Undead',        emoji: '💀', name: 'Undead',       desc: 'Risen from death' },
+      { id: 'Demons',        emoji: '🔥', name: 'Demons',       desc: 'Hellfire & fury' },
+      { id: 'Dragons',       emoji: '🐉', name: 'Dragons',      desc: 'Ancient & powerful' },
+      { id: 'Shadow Beasts', emoji: '👁️', name: 'Shadow Beasts',desc: 'From the void' },
+    ]
+  },
+  {
+    id: 'style', label: 'IV. Your Style', title: 'Choose Your Play Style',
+    options: [
+      { id: 'endless runner',    emoji: '🏃', name: 'Runner',       desc: 'Run & survive' },
+      { id: 'wave survival',     emoji: '🎯', name: 'Wave Survival',desc: 'Defend & destroy' },
+      { id: 'platformer',        emoji: '🪜', name: 'Platformer',   desc: 'Jump & explore' },
+      { id: 'top-down shooter',  emoji: '🗺️', name: 'Top-Down',     desc: 'Move & shoot' },
+    ]
+  }
+];
+
+const LOADING_MSGS = [
+  'Consulting the ancient scrolls…',
+  'Summoning your hero from the mists…',
+  'Charting the world map…',
+  'Awakening your enemies…',
+  'Weaving the game magic…',
+  'Sharpening swords and loading spells…',
+  'The forge burns bright…',
+  'Almost ready for battle…',
+];
+
+let selections = {};
+let loadingInterval = null;
+
+window.onload = () => renderQuestions();
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function renderQuestions() {
+  const body = document.getElementById('questions-body');
+  body.innerHTML = '';
+  QUESTIONS.forEach((q, qi) => {
+    const sec = document.createElement('div');
+    sec.className = 'q-section';
+    sec.innerHTML = `
+      <div class="q-label">${q.label}</div>
+      <div class="q-title">${q.title}</div>
+      <div class="options-grid" id="opts-${q.id}">
+        ${q.options.map(o => `
+          <div class="option-btn ${selections[q.id] === o.id ? 'selected' : ''}"
+               onclick="selectOption('${q.id}','${o.id}',this)">
+            <div class="opt-emoji">${o.emoji}</div>
+            <div class="opt-name">${o.name}</div>
+            <div class="opt-desc">${o.desc}</div>
+          </div>`).join('')}
+      </div>`;
+    body.appendChild(sec);
+    if (qi < QUESTIONS.length - 1) {
+      const hr = document.createElement('hr'); hr.className = 'q-divider'; body.appendChild(hr);
+    }
+  });
+  updateProgress();
+}
+
+function selectOption(qId, optId, el) {
+  selections[qId] = optId;
+  document.querySelectorAll(`#opts-${qId} .option-btn`).forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
+  updateProgress();
+  document.getElementById('generate-btn').style.display =
+    QUESTIONS.every(q => selections[q.id]) ? 'block' : 'none';
+}
+
+function updateProgress() {
+  document.getElementById('q-progress').innerHTML =
+    QUESTIONS.map(q => `<div class="q-dot ${selections[q.id] ? 'done' : ''}"></div>`).join('');
+}
+
+function goToQuestions() {
+  stopLoadingAnim();
+  showScreen('screen-questions');
+}
+
+async function handleGenerate() {
+  if (!QUESTIONS.every(q => selections[q.id])) return;
+  const get = id => QUESTIONS.find(q => q.id === id).options.find(o => o.id === selections[id]);
+  const hero = get('hero'), world = get('world'), enemy = get('enemy'), style = get('style');
+
+  document.getElementById('loading-summary').innerHTML =
+    `${hero.emoji} <span>${hero.name}</span> &nbsp;·&nbsp; ${world.emoji} <span>${world.name}</span><br>
+     ${enemy.emoji} vs <span>${enemy.name}</span> &nbsp;·&nbsp; ${style.emoji} <span>${style.name}</span>`;
+
+  showScreen('screen-loading');
+  startLoadingAnim();
+
+  try {
+    const html = await callClaude(selections.hero, selections.world, selections.enemy, selections.style);
+    stopLoadingAnim();
+    launchGame(html, hero, world);
+  } catch (err) {
+    stopLoadingAnim();
+    alert('Error: ' + (err.message || 'Something went wrong. Please try again.'));
+    showScreen('screen-questions');
+  }
+}
+
+function startLoadingAnim() {
+  let i = 0;
+  const el = document.getElementById('loading-msg');
+  el.textContent = LOADING_MSGS[0];
+  loadingInterval = setInterval(() => {
+    i = (i + 1) % LOADING_MSGS.length;
+    el.style.opacity = '0';
+    setTimeout(() => { el.textContent = LOADING_MSGS[i]; el.style.opacity = '1'; }, 400);
+  }, 3000);
+}
+
+function stopLoadingAnim() {
+  if (loadingInterval) { clearInterval(loadingInterval); loadingInterval = null; }
+}
+
+async function callClaude(hero, world, enemy, style) {
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': API_KEY,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true'
+    },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 6000,
+      system: `You are an expert HTML5 game developer. Generate a complete, self-contained mobile game.
+OUTPUT RULE: Output ONLY valid HTML starting with <!DOCTYPE html>. No markdown, no fences, no explanation.
+REQUIREMENTS:
+- Canvas-based with requestAnimationFrame loop
+- Designed for mobile portrait: canvas fills 100vw × 100vh (use window.innerWidth/innerHeight)
+- Touch controls: touchstart/touchmove/touchend — large comfortable touch targets
+- All visuals via Canvas 2D API only — no images, no external resources
+- HUD (score, lives) drawn on canvas with readable font sizes for mobile
+- Game over screen with large "TAP TO RESTART" text
+- Brief start overlay with instructions
+- 60fps smooth gameplay, genuinely fun and polished`,
+      messages: [{
+        role: 'user',
+        content: `Create a ${style} game optimized for mobile portrait screens:
+- Hero: ${hero}
+- World: ${world} (matching colors and atmosphere)
+- Enemy: ${enemy}
+- Genre: ${style}
+The canvas must fill the entire phone screen. Touch controls must feel natural.`
+      }]
+    })
+  });
+
+  if (!res.ok) {
+    const e = await res.json().catch(() => ({}));
+    throw new Error(e.error?.message || `API error ${res.status}`);
+  }
+
+  const data = await res.json();
+  let html = data.content.map(b => b.text || '').join('');
+  html = html.replace(/^```html\s*/i,'').replace(/^```\s*/i,'').replace(/```\s*$/,'').trim();
+  if (!html.toLowerCase().includes('<!doctype') && !html.toLowerCase().includes('<html'))
+    throw new Error('Unexpected response. Please try again.');
+  return html;
+}
+
+function launchGame(html, hero, world) {
+  document.getElementById('game-label').textContent = `${hero.emoji} ${hero.name} · ${world.name}`;
+  const frame = document.getElementById('game-frame');
+  frame.srcdoc = html;
+  showScreen('screen-game');
+}
+</script>
+</body>
+</html>
