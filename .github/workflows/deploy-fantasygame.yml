@@ -23,17 +23,23 @@ jobs:
       - name: Inject API key
         run: |
           python3 - <<'PY'
-          import os
-          key = os.environ['ANTHROPIC_API_KEY']
+          import os, sys
+          key = os.environ.get('ANTHROPIC_API_KEY', '')
+          if not key:
+              print('❌ ERROR: ANTHROPIC_API_KEY secret is empty or not set')
+              sys.exit(1)
+          if not key.startswith('sk-ant-'):
+              print(f'❌ ERROR: ANTHROPIC_API_KEY does not look like a valid Anthropic key (got {len(key)} chars, expected prefix sk-ant-)')
+              sys.exit(1)
           with open('fantasygame/index.html', 'r') as f:
               content = f.read()
+          if '__ANTHROPIC_API_KEY__' not in content:
+              print('❌ ERROR: placeholder __ANTHROPIC_API_KEY__ not found in index.html')
+              sys.exit(1)
           content = content.replace('__ANTHROPIC_API_KEY__', key)
           with open('fantasygame/index.html', 'w') as f:
               f.write(content)
-          if '__ANTHROPIC_API_KEY__' not in content:
-              print('✅ API key injected successfully')
-          else:
-              print('⚠️ WARNING: placeholder not found in file')
+          print(f'✅ API key injected successfully (key length: {len(key)})')
           PY
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
