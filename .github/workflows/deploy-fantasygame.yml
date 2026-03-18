@@ -4,6 +4,7 @@ on:
   push:
     branches: [main]
     paths: [fantasygame/**]
+  workflow_dispatch:
 
 jobs:
   deploy:
@@ -13,7 +14,21 @@ jobs:
 
       - name: Inject API key
         run: |
-          sed -i "s|__ANTHROPIC_API_KEY__|${{ secrets.ANTHROPIC_API_KEY }}|g" fantasygame/index.html
+          python3 - <<'PY'
+          import os
+          key = os.environ['ANTHROPIC_API_KEY']
+          with open('fantasygame/index.html', 'r') as f:
+              content = f.read()
+          content = content.replace('__ANTHROPIC_API_KEY__', key)
+          with open('fantasygame/index.html', 'w') as f:
+              f.write(content)
+          if key in content:
+              print('✅ API key injected successfully')
+          else:
+              print('⚠️ WARNING: placeholder not found in file')
+          PY
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
