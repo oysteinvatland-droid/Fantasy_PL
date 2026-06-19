@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cal.com embed-test – Oppstartstime hos lege</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 2rem;
+      color: #1a1a2e;
+      line-height: 1.5;
+    }
+    h1 { font-size: 1.6rem; }
+    h2 { margin-top: 3rem; border-bottom: 1px solid #eee; padding-bottom: .4rem; }
+    .note {
+      background: #f3f4f8;
+      border-left: 3px solid #4f6df5;
+      padding: .8rem 1rem;
+      border-radius: 4px;
+      font-size: .9rem;
+    }
+    code { background: #eef; padding: .1rem .3rem; border-radius: 3px; }
+  </style>
+</head>
+<body>
+
+  <h1>Oppstartstime hos lege – bookingtest</h1>
+  <p class="note">
+    Dette er den offisielle inline-koden fra Cal.com, lagt rett inn.
+    Åpne filen i nettleseren for å se hvordan bookingen ser ut på en side.
+    Book gjerne en testtime med din egen e-post for å sjekke bekreftelses-e-posten.
+  </p>
+
+  <h2>Velg time</h2>
+
+  <!-- Cal inline embed code begins -->
+  <div style="width:100%;height:100%;overflow:scroll" id="my-cal-inline-30min"></div>
+  <script type="text/javascript">
+    (function (C, A, L) { let p = function (a, ar) { a.q.push(ar); }; let d = C.document; C.Cal = C.Cal || function () { let cal = C.Cal; let ar = arguments; if (!cal.loaded) { cal.ns = {}; cal.q = cal.q || []; d.head.appendChild(d.createElement("script")).src = A; cal.loaded = true; } if (ar[0] === L) { const api = function () { p(api, arguments); }; const namespace = ar[1]; api.q = api.q || []; if(typeof namespace === "string"){cal.ns[namespace] = cal.ns[namespace] || api;p(cal.ns[namespace], ar);p(cal, ["initNamespace", namespace]);} else p(cal, ar); return;} p(cal, ar); }; })(window, "https://app.cal.com/embed/embed.js", "init");
+  Cal("init", "30min", {origin:"https://app.cal.com"});
+  Cal.config = Cal.config || {};
+  Cal.config.forwardQueryParams = true;
+    Cal.ns["30min"]("inline", {
+      elementOrSelector:"#my-cal-inline-30min",
+      config: {"layout":"month_view","useSlotsViewOnSmallScreen":"true"},
+      calLink: "re-start-mdletj/30min",
+    });
+    Cal.ns["30min"]("ui", {"hideEventTypeDetails":false,"layout":"month_view"});
+  </script>
+  <!-- Cal inline embed code ends -->
+
+</body>
+</html>
